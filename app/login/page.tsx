@@ -6,7 +6,7 @@ import { Card, CardBody } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
-export default async function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams?: { sent?: string; email?: string } }) {
   const supabase = getSupabaseServer();
   const {
     data: { user },
@@ -21,12 +21,11 @@ export default async function LoginPage() {
     const supabase = getSupabaseServer();
     const { error } = await supabase.auth.verifyOtp({ email, token, type: "email" });
     if (error) {
-      redirect(`/login?error=${encodeURIComponent(error.message)}`);
+      return redirect(`/login?error=${encodeURIComponent(error.message)}`);
     }
     // Ensure first user is promoted to admin (no-op when profiles already has rows)
     await supabase.rpc("set_first_admin");
-    revalidatePath("/dashboard");
-    redirect("/dashboard");
+    return redirect("/dashboard");
   }
 
   return (
@@ -35,24 +34,28 @@ export default async function LoginPage() {
         <h2 className="text-2xl font-semibold tracking-tight">Welcome</h2>
         <p className="text-sm text-gray-500">Sign in with your email to continue.</p>
       </div>
-      <Card>
-        <CardBody>
-          <EmailSignIn />
-        </CardBody>
-      </Card>
-      <Card>
-        <CardBody>
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Enter OTP code</h3>
-            <p className="text-sm text-gray-500">Check your inbox for the 6-digit code and paste it here.</p>
-          </div>
-          <form action={verifyOtp} className="mt-3 grid max-w-md grid-cols-1 gap-3 sm:grid-cols-2">
-            <Input name="email" type="email" placeholder="you@example.com" required className="sm:col-span-2" />
-            <Input name="token" inputMode="numeric" pattern="[0-9]{6}" placeholder="6-digit code" required />
-            <Button type="submit" className="sm:col-span-2">Verify</Button>
-          </form>
-        </CardBody>
-      </Card>
+      {searchParams?.sent !== "1" && (
+        <Card>
+          <CardBody>
+            <EmailSignIn />
+          </CardBody>
+        </Card>
+      )}
+      {searchParams?.sent === "1" && (
+        <Card>
+          <CardBody>
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold">Enter OTP code</h3>
+              <p className="text-sm text-gray-500">Check your inbox for the 6-digit code and paste it here.</p>
+            </div>
+            <form action={verifyOtp} className="mt-3 grid max-w-md grid-cols-1 gap-3 sm:grid-cols-2">
+              <Input name="email" type="email" placeholder="you@example.com" required defaultValue={searchParams?.email || ""} className="sm:col-span-2" />
+              <Input name="token" inputMode="numeric" pattern="[0-9]{6}" placeholder="6-digit code" required />
+              <Button type="submit" className="sm:col-span-2">Verify</Button>
+            </form>
+          </CardBody>
+        </Card>
+      )}
     </main>
   );
 }

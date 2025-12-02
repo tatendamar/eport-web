@@ -1,10 +1,12 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { getSupabaseClient } from "@/lib/supabaseClient";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
 export default function EmailSignIn() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -44,6 +46,8 @@ export default function EmailSignIn() {
       }
       if (error) throw error;
       setStatus("OTP sent. Check email and enter the 6-digit code below.");
+      // Navigate to show OTP form and prefill email
+      router.push(`/login?sent=1&email=${encodeURIComponent(email)}`);
       setDebug(null);
     } catch (err: any) {
       setStatus(err.message || "Sign-in failed");
