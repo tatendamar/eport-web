@@ -2,6 +2,9 @@ import EmailSignIn from "@/components/auth/email-signin";
 import { getSupabaseServer } from "@/lib/supabaseServer";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { Card, CardBody } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 
 export default async function LoginPage() {
   const supabase = getSupabaseServer();
@@ -27,21 +30,29 @@ export default async function LoginPage() {
   }
 
   return (
-    <main className="space-y-6">
+    <main className="space-y-6 max-w-2xl">
       <div className="space-y-2">
-        <h2 className="text-2xl font-semibold">Welcome</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">Welcome</h2>
         <p className="text-sm text-gray-500">Sign in with your email to continue.</p>
       </div>
-      <EmailSignIn />
-      <div className="space-y-2 pt-6">
-        <h3 className="text-lg font-semibold">Enter OTP code</h3>
-        <p className="text-sm text-gray-500">Check your inbox for the 6-digit code and paste it here.</p>
-        <form action={verifyOtp} className="grid max-w-md grid-cols-1 gap-3 sm:grid-cols-2">
-          <input name="email" type="email" placeholder="you@example.com" required className="sm:col-span-2" />
-          <input name="token" inputMode="numeric" pattern="[0-9]{6}" placeholder="6-digit code" required />
-          <button className="bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900">Verify</button>
-        </form>
-      </div>
+      <Card>
+        <CardBody>
+          <EmailSignIn />
+        </CardBody>
+      </Card>
+      <Card>
+        <CardBody>
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold">Enter OTP code</h3>
+            <p className="text-sm text-gray-500">Check your inbox for the 6-digit code and paste it here.</p>
+          </div>
+          <form action={verifyOtp} className="mt-3 grid max-w-md grid-cols-1 gap-3 sm:grid-cols-2">
+            <Input name="email" type="email" placeholder="you@example.com" required className="sm:col-span-2" />
+            <Input name="token" inputMode="numeric" pattern="[0-9]{6}" placeholder="6-digit code" required />
+            <Button type="submit" className="sm:col-span-2">Verify</Button>
+          </form>
+        </CardBody>
+      </Card>
     </main>
   );
 }
