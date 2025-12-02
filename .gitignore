@@ -6,7 +6,7 @@ out
 # Supabase local project files (do not commit)
 supabase/.branches/
 supabase/config.toml
-supabase/.temp/
+supabase/.temp/ 
 
 dist
 *.log
