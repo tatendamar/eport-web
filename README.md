@@ -7,7 +7,7 @@ A minimal Asset Manager web app with Admin and User roles.
 - Admin: manage categories/departments, view/delete assets
 - User: create assets, view only own assets
 
-## Setup
+## Setup 
 
 1. Prereqs
    - Node 18+
