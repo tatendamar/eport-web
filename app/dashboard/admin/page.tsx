@@ -3,6 +3,9 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
+import { Card, CardBody } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 
 async function requireAdmin() {
   const supabase = getSupabaseServer();
@@ -75,102 +78,93 @@ export default async function AdminDashboard() {
 
   return (
     <main className="space-y-8">
-      <h2 className="text-2xl font-semibold">Admin Dashboard</h2>
+      <h2 className="text-2xl font-semibold tracking-tight">Admin Dashboard</h2>
 
       <section className="flex items-center justify-end">
-        {/* Logout action */}
         <form action={async () => { "use server"; const supabase = getSupabaseServer(); await supabase.auth.signOut(); redirect("/login"); }}>
-          <button className="rounded-md border px-3 py-1 text-sm hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900">Logout</button>
+          <Button variant="secondary">Logout</Button>
         </form>
       </section>
 
       <section className="space-y-3">
         <h3 className="text-lg font-semibold">Quick Links</h3>
         <div className="flex flex-wrap gap-3">
-          <Link className="rounded-md bg-gray-900 px-4 py-2 text-white dark:bg-gray-100 dark:text-gray-900" href="/assets/new">Create Asset</Link>
+          <Link className="inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700" href="/assets/new">Create Asset</Link>
         </div>
       </section>
 
       <section className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <div className="space-y-3 rounded-md border p-4 dark:border-gray-800">
-          <h3 className="text-lg font-semibold">Create Category</h3>
-          <form action={createCategory} className="flex gap-2">
-            <input name="name" placeholder="Category name" required />
-            <button className="bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900">Add</button>
-          </form>
-          <ul className="list-disc pl-6 text-sm">
-            {categories?.map((c) => (
-              <li key={c.id}>{c.name}</li>
-            )) || <li>None</li>}
+        <Card>
+          <CardBody>
+            <h3 className="text-lg font-semibold">Create Category</h3>
+            <form action={createCategory} className="mt-2 flex gap-2">
+              <Input name="name" placeholder="Category name" required />
+              <Button type="submit">Add</Button>
+            </form>
+            <ul className="mt-3 list-disc pl-6 text-sm">
+              {categories?.map((c) => (
+                <li key={c.id}>{c.name}</li>
+              )) || <li>None</li>}
+            </ul>
+          </CardBody>
+        </Card>
+        <Card>
+          <CardBody>
+            <h3 className="text-lg font-semibold">Create Department</h3>
+            <form action={createDepartment} className="mt-2 flex gap-2">
+              <Input name="name" placeholder="Department name" required />
+              <Button type="submit">Add</Button>
+            </form>
+            <ul className="mt-3 list-disc pl-6 text-sm">
+              {departments?.map((d) => (
+                <li key={d.id}>{d.name}</li>
+              )) || <li>None</li>}
+            </ul>
+          </CardBody>
+        </Card>
+      </section>
+
+      <Card>
+        <CardBody>
+          <h3 className="text-lg font-semibold">All Assets</h3>
+          <ul className="mt-3 space-y-2 text-sm">
+            {assets?.length ? assets.map((a) => (
+              <li key={a.id} className="flex items-center justify-between rounded-md border p-3 dark:border-gray-800">
+                <div>
+                  <div className="font-medium">{a.name}</div>
+                  <div className="text-gray-500">{new Date(a.created_at as any).toLocaleString()}</div>
+                </div>
+                <form action={deleteAsset}>
+                  <input type="hidden" name="id" value={a.id as any} />
+                  <Button className="bg-red-600 hover:bg-red-700" type="submit">Delete</Button>
+                </form>
+              </li>
+            )) : (<li className="text-gray-500">None</li>)}
           </ul>
-        </div>
-        <div className="space-y-3 rounded-md border p-4 dark:border-gray-800">
-          <h3 className="text-lg font-semibold">Create Department</h3>
-          <form action={createDepartment} className="flex gap-2">
-            <input name="name" placeholder="Department name" required />
-            <button className="bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900">Add</button>
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardBody>
+          <h3 className="text-lg font-semibold">Promote User to Admin</h3>
+          <p className="text-sm text-gray-500">Enter the user&apos;s email to grant admin role. Requires you to be an admin.</p>
+          <form action={makeAdmin} className="mt-2 flex max-w-md gap-2">
+            <Input type="email" name="email" placeholder="user@example.com" required />
+            <Button type="submit">Make Admin</Button>
           </form>
-          <ul className="list-disc pl-6 text-sm">
-            {departments?.map((d) => (
-              <li key={d.id}>{d.name}</li>
-            )) || <li>None</li>}
-          </ul>
-        </div>
-      </section>
+        </CardBody>
+      </Card>
 
-      <section className="space-y-3">
-        <h3 className="text-lg font-semibold">Categories</h3>
-        <ul className="list-disc pl-6 text-sm">
-          {categories?.map((c) => (
-            <li key={c.id}>{c.name}</li>
-          )) || <li>None</li>}
-        </ul>
-      </section>
-
-      <section className="space-y-3">
-        <h3 className="text-lg font-semibold">Departments</h3>
-        <ul className="list-disc pl-6 text-sm">
-          {departments?.map((d) => (
-            <li key={d.id}>{d.name}</li>
-          )) || <li>None</li>}
-        </ul>
-      </section>
-
-      <section className="space-y-3">
-        <h3 className="text-lg font-semibold">All Assets</h3>
-        <ul className="space-y-2 text-sm">
-          {assets?.length ? assets.map((a) => (
-            <li key={a.id} className="flex items-center justify-between rounded-md border p-3 dark:border-gray-800">
-              <div>
-                <div className="font-medium">{a.name}</div>
-                <div className="text-gray-500">{new Date(a.created_at as any).toLocaleString()}</div>
-              </div>
-              <form action={deleteAsset}>
-                <input type="hidden" name="id" value={a.id as any} />
-                <button className="rounded-md bg-red-600 px-3 py-1 text-white hover:bg-red-700">Delete</button>
-              </form>
-            </li>
-          )) : (<li className="text-gray-500">None</li>)}
-        </ul>
-      </section>
-
-      <section className="space-y-3">
-        <h3 className="text-lg font-semibold">Promote User to Admin</h3>
-        <p className="text-sm text-gray-500">Enter the user&apos;s email to grant admin role. Requires you to be an admin.</p>
-        <form action={makeAdmin} className="flex max-w-md gap-2">
-          <input type="email" name="email" placeholder="user@example.com" required />
-          <button className="bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900">Make Admin</button>
-        </form>
-      </section>
-
-      <section className="space-y-3">
-        <h3 className="text-lg font-semibold">Invite User</h3>
-        <p className="text-sm text-gray-500">Requires `SUPABASE_SERVICE_ROLE_KEY` set on the server.</p>
-        <form action={inviteUser} className="flex max-w-md gap-2">
-          <input type="email" name="email" placeholder="user@example.com" required />
-          <button className="bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900">Invite</button>
-        </form>
-      </section>
+      <Card>
+        <CardBody>
+          <h3 className="text-lg font-semibold">Invite User</h3>
+          <p className="text-sm text-gray-500">Requires SUPABASE_SERVICE_ROLE_KEY set on the server.</p>
+          <form action={inviteUser} className="mt-2 flex max-w-md gap-2">
+            <Input type="email" name="email" placeholder="user@example.com" required />
+            <Button type="submit">Invite</Button>
+          </form>
+        </CardBody>
+      </Card>
     </main>
   );
 }
