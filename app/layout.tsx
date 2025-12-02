@@ -6,21 +6,23 @@ export const metadata = {
   description: "Eport Asset Manager using Next.js + Supabase",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen antialiased">
-        <div className="mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
-          <header className="mb-6 flex items-center justify-between">
-            <h1 className="text-xl font-semibold">Asset Manager</h1>
-            <nav className="text-sm text-gray-500">
-              <a href="/login">Login</a>
-              <span className="px-2">•</span>
-              <a href="/dashboard">Dashboard</a>
-            </nav>
-          </header>
-          {children}
-        </div>
+    <html lang="en">
+      <body className="min-h-screen bg-gray-50 text-gray-900">
+        <header className="sticky top-0 z-30 border-b bg-white/80 backdrop-blur">
+          <nav className="max-w-6xl mx-auto flex items-center justify-between p-4">
+            <a href="/" className="text-lg font-semibold tracking-tight">Asset Manager</a>
+            <div className="flex items-center gap-3">
+              <a href="/login" className="text-sm text-gray-700 hover:text-gray-900">Login</a>
+              <a href="/dashboard" className="inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700">Dashboard</a>
+            </div>
+          </nav>
+        </header>
+        <main className="max-w-6xl mx-auto p-4">{children}</main>
+        <footer className="mt-12 border-t">
+          <div className="max-w-6xl mx-auto p-4 text-sm text-gray-600">© {new Date().getFullYear()} Asset Manager</div>
+        </footer>
       </body>
     </html>
   );
