@@ -1,0 +1,78 @@
+-- Initial schema migration
+-- Created by GitHub Copilot on 2025-12-02 for eport-web
+
+-- Ensure pgcrypto is available for gen_random_uuid
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- User role enum
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+    CREATE TYPE user_role AS ENUM ('user', 'admin');
+  END IF;
+END$$;
+
+-- Departments
+CREATE TABLE IF NOT EXISTS departments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text UNIQUE NOT NULL
+);
+
+-- Categories
+CREATE TABLE IF NOT EXISTS categories (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text UNIQUE NOT NULL
+);
+
+-- Profiles
+CREATE TABLE IF NOT EXISTS profiles (
+  user_id uuid PRIMARY KEY,
+  email text UNIQUE,
+  role user_role NOT NULL DEFAULT 'user',
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- Assets
+CREATE TABLE IF NOT EXISTS assets (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  category_id uuid REFERENCES categories(id) ON DELETE SET NULL,
+  department_id uuid REFERENCES departments(id) ON DELETE SET NULL,
+  date_purchased date,
+  cost numeric(12,2),
+  created_by uuid NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- Helpful indexes
+CREATE INDEX IF NOT EXISTS idx_assets_created_by ON assets(created_by);
+CREATE INDEX IF NOT EXISTS idx_assets_category ON assets(category_id);
+CREATE INDEX IF NOT EXISTS idx_assets_department ON assets(department_id);
+
+-- Functions
+CREATE OR REPLACE FUNCTION is_admin() RETURNS boolean LANGUAGE sql SECURITY DEFINER AS $$
+  SELECT EXISTS(
+    SELECT 1 FROM profiles p WHERE p.user_id = auth.uid() AND p.role = 'admin'
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION set_admin_by_email(target_email text) RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  UPDATE profiles SET role = 'admin' WHERE email = target_email;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION set_first_admin() RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  total_profiles int;
+BEGIN
+  SELECT COUNT(*) INTO total_profiles FROM profiles;
+  IF total_profiles = 0 THEN
+    INSERT INTO profiles(user_id, email, role)
+    VALUES (auth.uid(), (SELECT email FROM auth.users WHERE id = auth.uid()), 'admin')
+    ON CONFLICT (user_id) DO UPDATE SET role = 'admin';
+  ELSIF total_profiles = 1 THEN
+    UPDATE profiles SET role = 'admin' WHERE user_id = auth.uid();
+  END IF;
+END;
+$$;
