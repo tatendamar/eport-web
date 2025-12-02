@@ -56,9 +56,11 @@ CREATE OR REPLACE FUNCTION is_admin() RETURNS boolean LANGUAGE sql SECURITY DEFI
   );
 $$;
 
-CREATE OR REPLACE FUNCTION set_admin_by_email(target_email text) RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+-- Align with existing signature to avoid parameter name change errors
+DROP FUNCTION IF EXISTS set_admin_by_email(text);
+CREATE OR REPLACE FUNCTION set_admin_by_email(p_email text) RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
-  UPDATE profiles SET role = 'admin' WHERE email = target_email;
+  UPDATE profiles SET role = 'admin' WHERE email = p_email;
 END;
 $$;
 
