@@ -1,0 +1,12 @@
+node_modules
+.next
+.turbo
+out
+.env*
+# Supabase local project files (do not commit)
+supabase/.branches/
+supabase/config.toml
+
+dist
+*.log
+.vercel
