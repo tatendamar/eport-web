@@ -1,6 +1,9 @@
 import { getSupabaseServer } from "@/lib/supabaseServer";
 import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import { Card, CardBody } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 
 // Allow initial admin signup only when there are absolutely no user profiles yet.
 // This ensures the first created account becomes the admin, even if not explicitly role='admin' yet.
@@ -38,20 +41,22 @@ export default async function AdminSignupPage() {
 
   return (
     <main className="space-y-6 max-w-lg">
-      <h1 className="text-2xl font-semibold">Initial Admin Signup</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Initial Admin Signup</h1>
       <p className="text-sm text-gray-600 dark:text-gray-400">
         This application has no users yet. Enter an email below to create and invite the first (admin) account. The
         recipient must click the verification link before logging in with OTP on the normal login page.
       </p>
-      <form action={createAdmin} className="space-y-4">
-        <div className="space-y-1">
-          <label htmlFor="email">Admin Email</label>
-          <input id="email" name="email" type="email" required placeholder="admin@example.com" />
-        </div>
-        <button className="rounded-md bg-gray-900 px-4 py-2 text-white dark:bg-gray-100 dark:text-gray-900">
-          Send Invite
-        </button>
-      </form>
+      <Card>
+        <CardBody>
+          <form action={createAdmin} className="space-y-4">
+            <div className="space-y-1">
+              <label htmlFor="email" className="text-sm font-medium">Admin Email</label>
+              <Input id="email" name="email" type="email" required placeholder="admin@example.com" />
+            </div>
+            <Button type="submit">Send Invite</Button>
+          </form>
+        </CardBody>
+      </Card>
       <div className="space-y-2 text-xs text-gray-500">
         <p>Prerequisites:</p>
         <ul className="list-disc pl-5 space-y-1">
