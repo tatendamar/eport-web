@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import { getSupabaseClient } from "@/lib/supabaseClient";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 
 export default function EmailSignIn() {
   const [email, setEmail] = useState("");
@@ -54,8 +56,8 @@ export default function EmailSignIn() {
   return (
     <form onSubmit={onSubmit} className="space-y-3">
       <div className="space-y-1">
-        <label htmlFor="email">Email</label>
-        <input
+        <label htmlFor="email" className="text-sm font-medium">Email</label>
+        <Input
           id="email"
           type="email"
           required
@@ -64,9 +66,9 @@ export default function EmailSignIn() {
           onChange={(e) => setEmail(e.target.value)}
         />
       </div>
-      <button type="submit" disabled={loading} className="bg-gray-900 text-white hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200">
+      <Button type="submit" disabled={loading}>
         {loading ? "Sending..." : "Send OTP"}
-      </button>
+      </Button>
       {status && <p className="text-sm text-gray-500">{status}</p>}
       {debug && <p className="text-xs text-gray-400">{debug}</p>}
     </form>
