@@ -80,12 +80,6 @@ export default async function AdminDashboard() {
     <main className="space-y-8">
       <h2 className="text-2xl font-semibold tracking-tight">Admin Dashboard</h2>
 
-      <section className="flex items-center justify-end">
-        <form action={async () => { "use server"; const supabase = getSupabaseServer(); await supabase.auth.signOut(); redirect("/login"); }}>
-          <Button variant="secondary">Logout</Button>
-        </form>
-      </section>
-
       <section className="space-y-3">
         <h3 className="text-lg font-semibold">Quick Links</h3>
         <div className="flex flex-wrap gap-3">

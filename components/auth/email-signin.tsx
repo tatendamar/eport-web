@@ -31,7 +31,6 @@ export default function EmailSignIn() {
 
       // Handle case where user does not yet exist and signups are blocked for this call.
       if (error && /Signups not allowed for otp/i.test(error.message)) {
-        // If self-signup allowed via env flag, retry allowing creation.
         if (process.env.NEXT_PUBLIC_ALLOW_SELF_SIGNUP === "1") {
           const retry = await supabase.auth.signInWithOtp({
             email,
