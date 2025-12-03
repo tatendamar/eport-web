@@ -69,8 +69,7 @@ jobs:
       - name: Link Supabase project
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
 
-      - name: Apply Supabase migrations via pg
-        if: ${{ env.SUPABASE_DB_URL != '' }}
+      - name: Apply Supabase migrations
         run: |
-          echo "Applying migrations with Node pg client"
-          node scripts/migrate.js
+          echo "Applying migrations with Supabase CLI"
+          supabase db push --include-all
