@@ -42,6 +42,23 @@ export default async function LoginPage({ searchParams }: { searchParams?: { sen
           }
           if (url && serviceKey) {
             const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
+            // Try concrete RPC by email if function exists
+            if (currentUser.email) {
+              const { error: rpcEmailErr } = await admin.rpc("set_first_admin_by_email", { p_email: currentUser.email });
+              if (!rpcEmailErr) {
+                // Double-check the role was set
+                const { data: row } = await admin
+                  .from("profiles")
+                  .select("role")
+                  .eq("user_id", currentUser.id)
+                  .maybeSingle();
+                if (row?.role === "admin") {
+                  return redirect("/dashboard?firstAdmin=1");
+                }
+              } else {
+                console.warn("[first-admin] set_first_admin_by_email error", rpcEmailErr?.message);
+              }
+            }
             // Upsert to be idempotent
             const { error: srError } = await admin
               .from("profiles")
