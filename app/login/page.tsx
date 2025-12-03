@@ -27,21 +27,21 @@ export default async function LoginPage({ searchParams }: { searchParams?: { sen
     }
     // Promote only when explicitly flagged (from admin-signup flow)
     if (initial === "1") {
-      const { count } = await supabase.from("profiles").select("user_id", { count: "exact", head: true });
+      const { count } = await supabase
+        .from("profiles")
+        .select("user_id", { count: "exact", head: true });
       if ((count ?? 0) === 0) {
-        // Use service role to avoid relying on auth.uid in the DB function
-        const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-        if (url && serviceKey) {
-          const admin = createClient(url, serviceKey, {
-            auth: { autoRefreshToken: false, persistSession: false },
-          });
-          await admin.rpc("set_first_admin_by_email", { p_email: email });
-        } else {
-          // Fallback to auth.uid()-based function if service role is not configured
-          await supabase.rpc("set_first_admin");
+        // Get the freshly authenticated user and insert profile directly
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (currentUser?.id) {
+          const { error: insertError } = await supabase
+            .from("profiles")
+            .insert({ user_id: currentUser.id, role: "admin" });
+          // Ignore duplicate/race; success continues to dashboard
+          if (!insertError) {
+            return redirect("/dashboard?firstAdmin=1");
+          }
         }
-        return redirect("/dashboard?firstAdmin=1");
       }
     }
     // Always return immediately to avoid further processing
