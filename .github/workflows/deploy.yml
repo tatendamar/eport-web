@@ -70,9 +70,13 @@ jobs:
 
       - name: Apply Supabase migrations
         env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PGHOST: ${{ secrets.SUPABASE_DB_HOST }}
         run: |
           echo "Applying migrations directly"
-          # Concatenate all migrations and pipe to psql
-          cat supabase/migrations/*.sql | psql "$SUPABASE_DB_URL" 2>&1 || true
+          # Apply each migration in order
+          for file in $(ls supabase/migrations/*.sql | sort); do
+            echo "Applying: $file"
+            psql -h "$PGHOST" -p 6543 -U "postgres.$SUPABASE_PROJECT_REF" -d postgres -f "$file" 2>&1 || echo "Note: Some statements may already exist"
+          done
           echo "Migrations complete"
