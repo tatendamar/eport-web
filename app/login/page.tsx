@@ -56,6 +56,16 @@ export default async function LoginPage({ searchParams }: { searchParams?: { sen
                   .update({ role: "admin" })
                   .eq("user_id", currentUser.id);
               }
+              // Final check using function if available
+              try {
+                const { data: isAdmin } = await admin.rpc("is_admin", { p_user_id: currentUser.id });
+                if (isAdmin) {
+                  return redirect("/dashboard?firstAdmin=1");
+                }
+              } catch {
+                // fallback to redirect after update
+                return redirect("/dashboard?firstAdmin=1");
+              }
               return redirect("/dashboard?firstAdmin=1");
             }
           }
@@ -65,6 +75,17 @@ export default async function LoginPage({ searchParams }: { searchParams?: { sen
             .insert({ user_id: currentUser.id, role: "admin" });
           if (!insertError) {
             return redirect("/dashboard?firstAdmin=1");
+          }
+          // As a last resort in production, try service-role update
+          if (url && serviceKey) {
+            const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
+            const { error: updErr } = await admin
+              .from("profiles")
+              .update({ role: "admin" })
+              .eq("user_id", currentUser.id);
+            if (!updErr) {
+              return redirect("/dashboard?firstAdmin=1");
+            }
           }
         }
       }
