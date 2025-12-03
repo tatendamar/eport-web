@@ -41,7 +41,9 @@ async function main() {
   const client = new Client({
     connectionString: dbUrl,
     statement_timeout: 600000,
-    ssl: { rejectUnauthorized: false }
+    connectionTimeoutMillis: 30000,
+    keepAlive: true,
+    ssl: { rejectUnauthorized: false },
   });
   await client.connect();
 
