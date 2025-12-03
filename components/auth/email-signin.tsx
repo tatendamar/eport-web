@@ -21,11 +21,12 @@ export default function EmailSignIn() {
         throw new Error("Supabase env vars missing. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.");
       }
       const supabase = getSupabaseClient();
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL;
       let { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
           shouldCreateUser: false,
-          emailRedirectTo: undefined,
+          emailRedirectTo: siteUrl || undefined,
         },
       });
 
@@ -34,7 +35,7 @@ export default function EmailSignIn() {
         if (process.env.NEXT_PUBLIC_ALLOW_SELF_SIGNUP === "1") {
           const retry = await supabase.auth.signInWithOtp({
             email,
-            options: { shouldCreateUser: true, emailRedirectTo: undefined },
+            options: { shouldCreateUser: true, emailRedirectTo: siteUrl || undefined },
           });
             error = retry.error;
         } else {
