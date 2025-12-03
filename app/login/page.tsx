@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { createClient } from "@supabase/supabase-js";
 
 export default async function LoginPage({ searchParams }: { searchParams?: { sent?: string; email?: string; initial?: string } }) {
   const supabase = getSupabaseServer();
@@ -28,9 +29,22 @@ export default async function LoginPage({ searchParams }: { searchParams?: { sen
     if (initial === "1") {
       const { count } = await supabase.from("profiles").select("user_id", { count: "exact", head: true });
       if ((count ?? 0) === 0) {
-        await supabase.rpc("set_first_admin");
+        // Use service role to avoid relying on auth.uid in the DB function
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        if (url && serviceKey) {
+          const admin = createClient(url, serviceKey, {
+            auth: { autoRefreshToken: false, persistSession: false },
+          });
+          await admin.rpc("set_first_admin_by_email", { p_email: email });
+        } else {
+          // Fallback to auth.uid()-based function if service role is not configured
+          await supabase.rpc("set_first_admin");
+        }
+        return redirect("/dashboard?firstAdmin=1");
       }
     }
+    // Always return immediately to avoid further processing
     return redirect("/dashboard");
   }
 

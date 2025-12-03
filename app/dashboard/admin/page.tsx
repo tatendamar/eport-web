@@ -17,7 +17,7 @@ async function requireAdmin() {
   return { supabase, user } as const;
 }
 
-export default async function AdminDashboard() {
+export default async function AdminDashboard({ searchParams }: { searchParams?: { firstAdmin?: string } }) {
   const { supabase } = await requireAdmin();
 
   const [{ data: categories }, { data: departments }, { data: assets }] = await Promise.all([
@@ -80,6 +80,11 @@ export default async function AdminDashboard() {
   return (
     <main className="space-y-8">
       <h2 className="text-2xl font-semibold tracking-tight">Admin Dashboard</h2>
+      {searchParams?.firstAdmin === "1" && (
+        <div className="rounded-md border border-green-300 bg-green-50 p-3 text-sm text-green-700">
+          Success: You have been promoted as the first admin.
+        </div>
+      )}
 
       <section className="space-y-3">
         <h3 className="text-lg font-semibold">Quick Links</h3>
