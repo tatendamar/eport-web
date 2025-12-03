@@ -1,11 +1,23 @@
 import EmailSignIn from "@/components/auth/email-signin";
 import { getSupabaseServer } from "@/lib/supabaseServer";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { createClient } from "@supabase/supabase-js";
+
+// Helper to get service-role admin client
+function getAdminClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceKey) {
+    console.warn("[first-admin] Missing env: NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+    return null;
+  }
+  return createClient(url, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
 
 export default async function LoginPage({ searchParams }: { searchParams?: { sent?: string; email?: string; initial?: string } }) {
   const supabase = getSupabaseServer();
@@ -20,115 +32,103 @@ export default async function LoginPage({ searchParams }: { searchParams?: { sen
     const token = String(formData.get("token") || "").trim();
     const initial = String(formData.get("initial") || "").trim();
     if (!email || !token) return;
+
     const supabase = getSupabaseServer();
     const { error } = await supabase.auth.verifyOtp({ email, token, type: "email" });
     if (error) {
       return redirect(`/login?error=${encodeURIComponent(error.message)}`);
     }
-    // Promote only when explicitly flagged (from admin-signup flow)
+
+    // First-admin promotion: only when explicitly flagged (from admin-signup flow)
     if (initial === "1") {
-      const { count } = await supabase
-        .from("profiles")
-        .select("user_id", { count: "exact", head: true });
-      if ((count ?? 0) === 0) {
-        // Get the freshly authenticated user
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
-        if (currentUser?.id) {
-          // Prefer service role to bypass any RLS issues on profiles
-          const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-          const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-          if (!url || !serviceKey) {
-            console.warn("[first-admin] Missing service-role env: URL or KEY not set");
-          }
-          if (url && serviceKey) {
-            const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
-            // Try concrete RPC by email if function exists
-            if (currentUser.email) {
-              const { error: rpcEmailErr } = await admin.rpc("set_first_admin_by_email", { p_email: currentUser.email });
-              if (!rpcEmailErr) {
-                // Double-check the role was set
-                const { data: row } = await admin
-                  .from("profiles")
-                  .select("role")
-                  .eq("user_id", currentUser.id)
-                  .maybeSingle();
-                if (row?.role === "admin") {
-                  return redirect("/dashboard?firstAdmin=1");
-                }
-              } else {
-                console.warn("[first-admin] set_first_admin_by_email error", rpcEmailErr?.message);
-              }
-            }
-            // Upsert to be idempotent
-            const { error: srError } = await admin
-              .from("profiles")
-              .upsert({ user_id: currentUser.id, role: "admin" }, { onConflict: "user_id" });
-            if (!srError) {
-              // Verify role is set; enforce update if needed
-              const { data: row, error: selErr } = await admin
-                .from("profiles")
-                .select("role")
-                .eq("user_id", currentUser.id)
-                .maybeSingle();
-              if (selErr) {
-                console.warn("[first-admin] select role error", selErr?.message);
-              }
-              if (row?.role !== "admin") {
-                const { error: updErr1 } = await admin
-                  .from("profiles")
-                  .update({ role: "admin" })
-                  .eq("user_id", currentUser.id);
-                if (updErr1) {
-                  console.warn("[first-admin] enforce admin update error", updErr1?.message);
-                }
-              }
-              // Final check using function if available
-              try {
-                const { data: isAdmin, error: rpcErr } = await admin.rpc("is_admin", { p_user_id: currentUser.id });
-                if (rpcErr) {
-                  console.warn("[first-admin] is_admin rpc error", rpcErr?.message);
-                }
-                if (isAdmin) {
-                  return redirect("/dashboard?firstAdmin=1");
-                }
-              } catch {
-                // fallback to redirect after update
-                return redirect("/dashboard?firstAdmin=1");
-              }
-              return redirect("/dashboard?firstAdmin=1");
-            }
-            if (srError) {
-              console.warn("[first-admin] service-role upsert error", srError?.message);
-            }
-          }
-          // Fallback: try normal insert (requires insert RLS policy)
-          const { error: insertError } = await supabase
-            .from("profiles")
-            .insert({ user_id: currentUser.id, role: "admin" });
-          if (!insertError) {
+      console.log("[first-admin] Attempting first admin promotion for:", email);
+
+      // Get the current user from session FIRST - this is the most reliable source
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      console.log("[first-admin] Current user from session:", currentUser?.id, currentUser?.email);
+
+      const adminClient = getAdminClient();
+      if (adminClient && currentUser?.id) {
+        // Check if any profiles exist using service-role (bypasses RLS)
+        const { count, error: countErr } = await adminClient
+          .from("profiles")
+          .select("user_id", { count: "exact", head: true });
+
+        if (countErr) {
+          console.warn("[first-admin] count error:", countErr.message);
+        }
+
+        console.log("[first-admin] Current profile count:", count);
+
+        if ((count ?? 0) === 0) {
+          // Method 1: Try the RPC function that uses user_id directly
+          console.log("[first-admin] Trying set_first_admin_by_id RPC with:", currentUser.id);
+          const { data: rpcResult, error: rpcErr } = await adminClient.rpc("set_first_admin_by_id", { p_user_id: currentUser.id });
+          if (!rpcErr && rpcResult === true) {
+            console.log("[first-admin] SUCCESS via set_first_admin_by_id RPC");
             return redirect("/dashboard?firstAdmin=1");
           }
-          if (insertError) {
-            console.warn("[first-admin] normal insert error", insertError?.message);
+          if (rpcErr) {
+            console.warn("[first-admin] set_first_admin_by_id error:", rpcErr.message);
           }
-          // As a last resort in production, try service-role update
-          if (url && serviceKey) {
-            const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
-            const { error: updErr } = await admin
-              .from("profiles")
-              .update({ role: "admin" })
-              .eq("user_id", currentUser.id);
-            if (!updErr) {
+
+          // Method 2: Direct upsert with service-role client
+          console.log("[first-admin] Trying direct upsert for user_id:", currentUser.id);
+          const { error: upsertErr } = await adminClient
+            .from("profiles")
+            .upsert({ user_id: currentUser.id, role: "admin" }, { onConflict: "user_id" });
+          if (!upsertErr) {
+            console.log("[first-admin] SUCCESS via direct upsert");
+            return redirect("/dashboard?firstAdmin=1");
+          }
+          console.warn("[first-admin] upsert error:", upsertErr.message);
+
+          // Method 3: Try insert (in case upsert has issues)
+          console.log("[first-admin] Trying direct insert");
+          const { error: insertErr } = await adminClient
+            .from("profiles")
+            .insert({ user_id: currentUser.id, role: "admin" });
+          if (!insertErr) {
+            console.log("[first-admin] SUCCESS via direct insert");
+            return redirect("/dashboard?firstAdmin=1");
+          }
+          console.warn("[first-admin] insert error:", insertErr.message);
+
+          // Method 4: Try the email-based RPC as fallback
+          if (currentUser.email) {
+            console.log("[first-admin] Trying set_first_admin_by_email RPC with:", currentUser.email);
+            const { data: emailResult, error: emailErr } = await adminClient.rpc("set_first_admin_by_email", { p_email: currentUser.email });
+            if (!emailErr && emailResult) {
+              console.log("[first-admin] SUCCESS via set_first_admin_by_email RPC");
               return redirect("/dashboard?firstAdmin=1");
             }
-            if (updErr) {
-              console.warn("[first-admin] last-resort update error", updErr?.message);
+            if (emailErr) {
+              console.warn("[first-admin] set_first_admin_by_email error:", emailErr.message);
             }
           }
+
+          // If all methods failed, check if profile was created anyway
+          const { data: finalCheck } = await adminClient
+            .from("profiles")
+            .select("role")
+            .eq("user_id", currentUser.id)
+            .maybeSingle();
+          if (finalCheck?.role === "admin") {
+            console.log("[first-admin] SUCCESS - admin profile exists after all attempts");
+            return redirect("/dashboard?firstAdmin=1");
+          }
+
+          console.error("[first-admin] FAILED - could not create admin profile after all attempts");
+        } else {
+          console.log("[first-admin] Profiles already exist, skipping promotion");
         }
+      } else if (!adminClient) {
+        console.error("[first-admin] No admin client available - check SUPABASE_SERVICE_ROLE_KEY");
+      } else if (!currentUser?.id) {
+        console.error("[first-admin] No current user ID from session after OTP verification");
       }
     }
-    // Always return immediately to avoid further processing
+
     return redirect("/dashboard");
   }
 

@@ -70,8 +70,7 @@ jobs:
         run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
 
       - name: Apply Supabase migrations via pg
-        if: ${{ env.SUPABASE_DB_URL != '' && env.RUN_DB_MIGRATIONS == 'true' }}
+        if: ${{ env.SUPABASE_DB_URL != '' }}
         run: |
           echo "Applying migrations with Node pg client"
-          npm i --no-save pg dotenv
           node scripts/migrate.js
