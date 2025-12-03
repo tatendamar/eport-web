@@ -26,7 +26,10 @@ export default async function LoginPage({ searchParams }: { searchParams?: { sen
     }
     // Promote only when explicitly flagged (from admin-signup flow)
     if (initial === "1") {
-      await supabase.rpc("set_first_admin");
+      const { count } = await supabase.from("profiles").select("user_id", { count: "exact", head: true });
+      if ((count ?? 0) === 0) {
+        await supabase.rpc("set_first_admin");
+      }
     }
     return redirect("/dashboard");
   }

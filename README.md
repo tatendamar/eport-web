@@ -10,41 +10,72 @@ A minimal Asset Manager web app with Admin and User roles.
 ## Setup
 
 1. Prereqs
-   - Node 18+
-   - A Supabase project (free tier is fine)
+   - Node.js 18+
+   - macOS with `zsh` (commands below use zsh)
+   - A Supabase project (free tier works)
 
-2. Configure Supabase
-   - In the Supabase SQL editor, run the SQL files in order:
-     - `supabase/schema.sql`
-     - `supabase/policies.sql`
-   - Create at least one department and category (insert rows via SQL or Table Editor).
-   - In the `profiles` table, set your user to role `admin` to access the admin dashboard.
+2. Environment Variables
+   - Create `.env.local` in the repo root and populate the following:
 
-3. Environment Variables
-   - Copy `.env.local.example` to `.env.local` and fill in from Supabase project settings:
+   ```zsh
+   # Public client vars (safe in browser)
+   NEXT_PUBLIC_SUPABASE_URL="https://<project>.supabase.co"
+   NEXT_PUBLIC_SUPABASE_ANON_KEY="<anon key>"
 
-   ```bash
-   cp .env.local.example .env.local
-   # Fill NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY
+   # Server-only vars (DO NOT expose to client)
+   SUPABASE_SERVICE_ROLE_KEY="<service role key>"
+   SUPABASE_DB_URL="postgresql://<user>:<password>@<host>:<port>/<db>?sslmode=require"
+
+   # Optional for CLI workflows
+   SUPABASE_PROJECT_REF="<project ref>" # e.g. nubxnxmahowkxaayqwaj
+   SUPABASE_ACCESS_TOKEN="<personal access token>" # for supabase CLI login
    ```
 
-4. Initial Admin Signup (Optional)
+   - Find these in Supabase: Project Settings → API (URL/keys) and Database (connection string).
 
-   If you want to restrict admin creation to a single controlled invite flow:
+3. Database Migrations (Recommended: Node runner)
+   - This repo includes a migration runner designed for hosted Supabase and IPv6-only constraints.
+   - Ensure `SUPABASE_DB_URL` is set, then run:
 
-   1. Add `SUPABASE_SERVICE_ROLE_KEY` to `.env.local` (never expose this client-side).
-   2. Start the app and visit `/admin-signup` while no admin exists.
-   3. Enter the admin's email to send an invite; they must verify the email.
-   4. After verification, they can login via OTP on `/login`.
+   ```zsh
+   node scripts/migrate.js
+   ```
 
-5. Install and Run
+   - It applies files under `supabase/migrations/` in safe order:
+     - `*_init.sql` creates schema, tables, and functions.
+     - `*_policies.sql` applies RLS policies.
 
-   ```bash
+4. Optional: Supabase CLI
+   - Install CLI (optional, for local dev or non-IPv6 environments):
+
+   ```zsh
+   brew install supabase/tap/supabase
+   supabase --version
+   supabase login # uses SUPABASE_ACCESS_TOKEN, or interactive
+   supabase link --project-ref "$SUPABASE_PROJECT_REF"
+   ```
+
+   - Push SQL with CLI (if your network supports it):
+
+   ```zsh
+   supabase db push # applies files in supabase/migrations
+   ```
+
+5. Initial Admin Signup (Do this first)
+   - Start the app and visit `/admin-signup` to bootstrap the first admin.
+   - This route sends an invite using the service role and promotes the first verified user to `admin` when profiles are empty.
+   - After verifying via email, sign in on `/login` and you’ll be redirected to `/dashboard/admin`.
+
+6. Install and Run the App
+
+   ```zsh
    npm install
    npm run dev
    ```
 
-   Open <http://localhost:3000> and sign in with your email. Use the OTP or magic link sent by Supabase.
+   - Open `http://localhost:3000`.
+   - Use the OTP/magic link flow to sign in.
+   - For subsequent admins, use the Admin Dashboard invite flow.
 
 ## Deploy (Vercel + GitHub)
 

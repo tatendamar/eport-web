@@ -31,7 +31,14 @@ async function main() {
   const files = fs
     .readdirSync(migrationsDir)
     .filter((f) => f.endsWith('.sql'))
-    .sort();
+    // Ensure schema init files are applied before policy files regardless of timestamp
+    .sort((a, b) => {
+      const aIsInit = /init\.sql$/i.test(a);
+      const bIsInit = /init\.sql$/i.test(b);
+      if (aIsInit && !bIsInit) return -1;
+      if (!aIsInit && bIsInit) return 1;
+      return a.localeCompare(b);
+    });
 
   if (files.length === 0) {
     console.log('No migration files found.');
