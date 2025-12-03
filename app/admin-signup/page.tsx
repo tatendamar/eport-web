@@ -35,8 +35,8 @@ export default async function AdminSignupPage() {
     if (error) {
       redirect("/admin-signup?error=" + encodeURIComponent(error.message));
     }
-    // Instruct user to check inbox; after OTP verify or callback, set_first_admin will promote them
-    redirect("/admin-signup?success=1");
+    // Send user to login to enter OTP; mark this as initial admin flow so we promote after verify
+    redirect(`/login?sent=1&email=${encodeURIComponent(email)}&initial=1`);
   }
 
   return (
