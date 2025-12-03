@@ -18,6 +18,10 @@ create policy profiles_self_select on profiles for select using (user_id = auth.
 drop policy if exists profiles_self_update on profiles;
 create policy profiles_self_update on profiles for update using (user_id = auth.uid());
 
+-- Allow users to create their own profile (needed for first admin bootstrap)
+drop policy if exists profiles_self_insert on profiles;
+create policy profiles_self_insert on profiles for insert with check (user_id = auth.uid());
+
 -- Admins can manage profiles
 drop policy if exists profiles_admin_all on profiles;
 create policy profiles_admin_all on profiles for all using (public.is_admin());
