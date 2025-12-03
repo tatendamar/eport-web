@@ -50,9 +50,9 @@ CREATE INDEX IF NOT EXISTS idx_assets_category ON assets(category_id);
 CREATE INDEX IF NOT EXISTS idx_assets_department ON assets(department_id);
 
 -- Functions
-CREATE OR REPLACE FUNCTION is_admin() RETURNS boolean LANGUAGE sql SECURITY DEFINER AS $$
+CREATE OR REPLACE FUNCTION public.is_admin() RETURNS boolean LANGUAGE sql SECURITY DEFINER AS $$
   SELECT EXISTS(
-    SELECT 1 FROM profiles p WHERE p.user_id = auth.uid() AND p.role = 'admin'
+    SELECT 1 FROM public.profiles p WHERE p.user_id = auth.uid() AND p.role = 'admin'
   );
 $$;
 
