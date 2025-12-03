@@ -44,6 +44,7 @@ A minimal Asset Manager web app with Admin and User roles.
    - It applies files under `supabase/migrations/` in safe order:
      - `*_init.sql` creates schema, tables, and functions.
      - `*_policies.sql` applies RLS policies.
+     - `*_cleanup_profiles_email.sql` avoids conflicts on triggers
 
 4. Optional: Supabase CLI
    - Install CLI (optional, for local dev or non-IPv6 environments):
