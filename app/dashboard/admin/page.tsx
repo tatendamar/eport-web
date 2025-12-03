@@ -6,6 +6,7 @@ import { createClient } from "@supabase/supabase-js";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 async function requireAdmin() {
   const supabase = getSupabaseServer();
@@ -93,7 +94,7 @@ export default async function AdminDashboard() {
             <h3 className="text-lg font-semibold">Create Category</h3>
             <form action={createCategory} className="mt-2 flex gap-2">
               <Input name="name" placeholder="Category name" required />
-              <Button type="submit">Add</Button>
+              <SubmitButton pendingText="Adding...">Add</SubmitButton>
             </form>
             <ul className="mt-3 list-disc pl-6 text-sm">
               {categories?.map((c) => (
@@ -107,7 +108,7 @@ export default async function AdminDashboard() {
             <h3 className="text-lg font-semibold">Create Department</h3>
             <form action={createDepartment} className="mt-2 flex gap-2">
               <Input name="name" placeholder="Department name" required />
-              <Button type="submit">Add</Button>
+              <SubmitButton pendingText="Adding...">Add</SubmitButton>
             </form>
             <ul className="mt-3 list-disc pl-6 text-sm">
               {departments?.map((d) => (
@@ -134,7 +135,7 @@ export default async function AdminDashboard() {
                 </div>
                 <form action={deleteAsset}>
                   <input type="hidden" name="id" value={a.id as any} />
-                  <Button className="bg-red-600 hover:bg-red-700" type="submit">Delete</Button>
+                  <SubmitButton className="bg-red-600 hover:bg-red-700" pendingText="Deleting...">Delete</SubmitButton>
                 </form>
               </li>
             )) : (<li className="text-gray-500">None</li>)}
@@ -148,7 +149,7 @@ export default async function AdminDashboard() {
           <p className="text-sm text-gray-500">Enter the user&apos;s email to grant admin role. Requires you to be an admin.</p>
           <form action={makeAdmin} className="mt-2 flex max-w-md gap-2">
             <Input type="email" name="email" placeholder="user@example.com" required />
-            <Button type="submit">Make Admin</Button>
+            <SubmitButton pendingText="Promoting...">Make Admin</SubmitButton>
           </form>
         </CardBody>
       </Card>
@@ -159,7 +160,7 @@ export default async function AdminDashboard() {
           <p className="text-sm text-gray-500">Requires SUPABASE_SERVICE_ROLE_KEY set on the server.</p>
           <form action={inviteUser} className="mt-2 flex max-w-md gap-2">
             <Input type="email" name="email" placeholder="user@example.com" required />
-            <Button type="submit">Invite</Button>
+            <SubmitButton pendingText="Inviting...">Invite</SubmitButton>
           </form>
         </CardBody>
       </Card>

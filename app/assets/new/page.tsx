@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 
 const AssetSchema = z.object({
   name: z.string().min(2),
@@ -95,7 +96,7 @@ export default async function NewAssetPage() {
                 <Input id="cost" name="cost" type="number" step="0.01" min="0" required />
               </div>
             </div>
-            <Button type="submit">Create</Button>
+            <SubmitButton pendingText="Creating...">Create</SubmitButton>
           </form>
         </CardBody>
       </Card>
