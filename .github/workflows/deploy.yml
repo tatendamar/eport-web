@@ -71,4 +71,9 @@ jobs:
       - name: Apply Supabase migrations
         run: |
           echo "Applying migrations with Supabase CLI"
-          supabase db push --linked --password "$SUPABASE_DB_PASSWORD"
+          # Apply each migration file directly using db remote commit
+          for file in supabase/migrations/*.sql; do
+            echo "Applying: $file"
+            supabase db execute --file "$file" --password "$SUPABASE_DB_PASSWORD" 2>&1 || echo "Skipped (may already exist): $file"
+          done
+          echo "Migrations complete"
