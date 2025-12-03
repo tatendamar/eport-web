@@ -146,6 +146,7 @@ export default async function AdminDashboard() {
       <Card>
         <CardBody>
           <h3 className="text-lg font-semibold">Promote User to Admin</h3>
+          <span className="ml-2 inline-flex items-center rounded-full bg-gray-200 px-2 py-0.5 text-xs text-gray-700">Coming soon</span>
           <p className="text-sm text-gray-500">Enter the user&apos;s email to grant admin role. Requires you to be an admin.</p>
           <form action={makeAdmin} className="mt-2 flex max-w-md gap-2">
             <Input type="email" name="email" placeholder="user@example.com" required />
@@ -157,7 +158,6 @@ export default async function AdminDashboard() {
       <Card>
         <CardBody>
           <h3 className="text-lg font-semibold">Invite User</h3>
-          <p className="text-sm text-gray-500">Requires SUPABASE_SERVICE_ROLE_KEY set on the server.</p>
           <form action={inviteUser} className="mt-2 flex max-w-md gap-2">
             <Input type="email" name="email" placeholder="user@example.com" required />
             <SubmitButton pendingText="Inviting...">Invite</SubmitButton>

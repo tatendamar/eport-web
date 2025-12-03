@@ -43,7 +43,7 @@ export default async function AdminSignupPage() {
     <main className="space-y-6 max-w-lg">
       <h1 className="text-2xl font-semibold tracking-tight">Initial Admin Signup</h1>
       <p className="text-sm text-gray-600 dark:text-gray-400">
-        This application has no users yet. Enter an email below to create and invite the first (admin) account. The
+         Enter an email below to create and invite the first (admin) account. The
         recipient must click the verification link before logging in with OTP on the normal login page.
       </p>
       <Card>
@@ -57,13 +57,6 @@ export default async function AdminSignupPage() {
           </form>
         </CardBody>
       </Card>
-      <div className="space-y-2 text-xs text-gray-500">
-        <p>Prerequisites:</p>
-        <ul className="list-disc pl-5 space-y-1">
-          <li>Email auth enabled in Supabase.</li>
-          <li>Email template includes <code>{'{{ .Token }}'}</code> to show the OTP.</li>
-        </ul>
-      </div>
     </main>
   );
 }

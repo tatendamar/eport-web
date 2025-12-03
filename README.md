@@ -65,6 +65,7 @@ A minimal Asset Manager web app with Admin and User roles.
    - Start the app and visit `/admin-signup` to bootstrap the first admin.
    - This route sends an invite using the service role and promotes the first verified user to `admin` when profiles are empty.
    - After verifying via email, sign in on `/login` and you’ll be redirected to `/dashboard/admin`.
+   - Only admins can invite users from the Admin Dashboard. Ensure you’re signed in as an admin before sending invites.
 
 6. Install and Run the App
 
@@ -76,6 +77,39 @@ A minimal Asset Manager web app with Admin and User roles.
    - Open `http://localhost:3000`.
    - Use the OTP/magic link flow to sign in.
    - For subsequent admins, use the Admin Dashboard invite flow.
+
+## Development
+
+- Scripts:
+   - `npm run dev`: start local dev server.
+   - `node scripts/migrate.js`: apply DB migrations to your Supabase project using `SUPABASE_DB_URL`.
+- Env:
+   - Use `.env.local` for local development; see variables in Setup above.
+- Testing changes:
+   - After editing server actions or migrations, refresh the page where the action runs; server actions are executed on submit.
+
+## Docker
+
+- Build and run locally:
+
+```zsh
+docker build -t eport-web:local .
+docker run --rm -p 3000:3000 \
+   -e NEXT_PUBLIC_SUPABASE_URL \
+   -e NEXT_PUBLIC_SUPABASE_ANON_KEY \
+   -e SUPABASE_SERVICE_ROLE_KEY \
+   -e SUPABASE_DB_URL \
+   eport-web:local
+```
+
+- Compose (if you use `docker-compose.yml`):
+
+```zsh
+docker compose up --build
+```
+
+- Notes:
+   - Ensure env vars are provided to the container. Without `NEXT_PUBLIC_SUPABASE_*` the client cannot connect; without `SUPABASE_SERVICE_ROLE_KEY` admin invites are disabled.
 
 ## Deploy (Vercel + GitHub)
 
