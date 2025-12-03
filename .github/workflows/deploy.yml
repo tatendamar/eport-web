@@ -60,5 +60,10 @@ jobs:
       - name: Link Supabase project
         run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
 
-      - name: Apply Supabase migrations
-        run: supabase db push
+      - name: Apply Supabase migrations via pg
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          echo "Applying migrations with Node pg client"
+          npm i --no-save pg
+          node scripts/migrate.js
