@@ -37,6 +37,9 @@ export default async function LoginPage({ searchParams }: { searchParams?: { sen
           // Prefer service role to bypass any RLS issues on profiles
           const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
           const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+          if (!url || !serviceKey) {
+            console.warn("[first-admin] Missing service-role env: URL or KEY not set");
+          }
           if (url && serviceKey) {
             const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
             // Upsert to be idempotent
@@ -45,20 +48,29 @@ export default async function LoginPage({ searchParams }: { searchParams?: { sen
               .upsert({ user_id: currentUser.id, role: "admin" }, { onConflict: "user_id" });
             if (!srError) {
               // Verify role is set; enforce update if needed
-              const { data: row } = await admin
+              const { data: row, error: selErr } = await admin
                 .from("profiles")
                 .select("role")
                 .eq("user_id", currentUser.id)
                 .maybeSingle();
+              if (selErr) {
+                console.warn("[first-admin] select role error", selErr?.message);
+              }
               if (row?.role !== "admin") {
-                await admin
+                const { error: updErr1 } = await admin
                   .from("profiles")
                   .update({ role: "admin" })
                   .eq("user_id", currentUser.id);
+                if (updErr1) {
+                  console.warn("[first-admin] enforce admin update error", updErr1?.message);
+                }
               }
               // Final check using function if available
               try {
-                const { data: isAdmin } = await admin.rpc("is_admin", { p_user_id: currentUser.id });
+                const { data: isAdmin, error: rpcErr } = await admin.rpc("is_admin", { p_user_id: currentUser.id });
+                if (rpcErr) {
+                  console.warn("[first-admin] is_admin rpc error", rpcErr?.message);
+                }
                 if (isAdmin) {
                   return redirect("/dashboard?firstAdmin=1");
                 }
@@ -68,6 +80,9 @@ export default async function LoginPage({ searchParams }: { searchParams?: { sen
               }
               return redirect("/dashboard?firstAdmin=1");
             }
+            if (srError) {
+              console.warn("[first-admin] service-role upsert error", srError?.message);
+            }
           }
           // Fallback: try normal insert (requires insert RLS policy)
           const { error: insertError } = await supabase
@@ -75,6 +90,9 @@ export default async function LoginPage({ searchParams }: { searchParams?: { sen
             .insert({ user_id: currentUser.id, role: "admin" });
           if (!insertError) {
             return redirect("/dashboard?firstAdmin=1");
+          }
+          if (insertError) {
+            console.warn("[first-admin] normal insert error", insertError?.message);
           }
           // As a last resort in production, try service-role update
           if (url && serviceKey) {
@@ -85,6 +103,9 @@ export default async function LoginPage({ searchParams }: { searchParams?: { sen
               .eq("user_id", currentUser.id);
             if (!updErr) {
               return redirect("/dashboard?firstAdmin=1");
+            }
+            if (updErr) {
+              console.warn("[first-admin] last-resort update error", updErr?.message);
             }
           }
         }
