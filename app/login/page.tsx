@@ -31,13 +31,26 @@ export default async function LoginPage({ searchParams }: { searchParams?: { sen
         .from("profiles")
         .select("user_id", { count: "exact", head: true });
       if ((count ?? 0) === 0) {
-        // Get the freshly authenticated user and insert profile directly
+        // Get the freshly authenticated user
         const { data: { user: currentUser } } = await supabase.auth.getUser();
         if (currentUser?.id) {
+          // Prefer service role to bypass any RLS issues on profiles
+          const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+          const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+          if (url && serviceKey) {
+            const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
+            // Upsert to be idempotent
+            const { error: srError } = await admin
+              .from("profiles")
+              .upsert({ user_id: currentUser.id, role: "admin" }, { onConflict: "user_id" });
+            if (!srError) {
+              return redirect("/dashboard?firstAdmin=1");
+            }
+          }
+          // Fallback: try normal insert (requires insert RLS policy)
           const { error: insertError } = await supabase
             .from("profiles")
             .insert({ user_id: currentUser.id, role: "admin" });
-          // Ignore duplicate/race; success continues to dashboard
           if (!insertError) {
             return redirect("/dashboard?firstAdmin=1");
           }
