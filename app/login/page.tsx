@@ -44,6 +44,18 @@ export default async function LoginPage({ searchParams }: { searchParams?: { sen
               .from("profiles")
               .upsert({ user_id: currentUser.id, role: "admin" }, { onConflict: "user_id" });
             if (!srError) {
+              // Verify role is set; enforce update if needed
+              const { data: row } = await admin
+                .from("profiles")
+                .select("role")
+                .eq("user_id", currentUser.id)
+                .maybeSingle();
+              if (row?.role !== "admin") {
+                await admin
+                  .from("profiles")
+                  .update({ role: "admin" })
+                  .eq("user_id", currentUser.id);
+              }
               return redirect("/dashboard?firstAdmin=1");
             }
           }
