@@ -22,7 +22,7 @@ export default async function AdminDashboard() {
   const [{ data: categories }, { data: departments }, { data: assets }] = await Promise.all([
     supabase.from("categories").select("id,name"),
     supabase.from("departments").select("id,name"),
-    supabase.from("assets").select("id,name,created_at")
+    supabase.from("assets").select("id,name,cost,created_at,categories(name),departments(name)")
   ]);
 
   async function createCategory(formData: FormData) {
@@ -123,9 +123,13 @@ export default async function AdminDashboard() {
           <h3 className="text-lg font-semibold">All Assets</h3>
           <ul className="mt-3 space-y-2 text-sm">
             {assets?.length ? assets.map((a) => (
+              
               <li key={a.id} className="flex items-center justify-between rounded-md border p-3 dark:border-gray-800">
                 <div>
                   <div className="font-medium">{a.name}</div>
+                  <div className="text-gray-500">Category: {Array.isArray((a as any).categories) ? ((a as any).categories[0]?.name ?? "-") : (((a as any).categories?.name) ?? "-")}</div>
+                  <div className="text-gray-500">Department: {Array.isArray((a as any).departments) ? ((a as any).departments[0]?.name ?? "-") : (((a as any).departments?.name) ?? "-")}</div>
+                  <div className="text-gray-500">Cost: {typeof a.cost === "number" ? a.cost.toFixed(2) : a.cost}</div>
                   <div className="text-gray-500">{new Date(a.created_at as any).toLocaleString()}</div>
                 </div>
                 <form action={deleteAsset}>

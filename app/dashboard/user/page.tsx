@@ -10,7 +10,7 @@ export default async function UserDashboard() {
   if (!user) redirect("/login");
   const { data: assets } = await supabase
     .from("assets")
-    .select("id,name,created_at")
+    .select("id,name,cost,created_at,categories(name),departments(name)")
     .eq("created_by", user.id)
     .order("created_at", { ascending: false });
 
@@ -28,6 +28,9 @@ export default async function UserDashboard() {
               assets.map((a: any) => (
                 <li key={a.id} className="py-3">
                   <div className="font-medium">{a.name}</div>
+                  <div className="text-gray-500">Category: {Array.isArray((a as any).categories) ? ((a as any).categories[0]?.name ?? "-") : (((a as any).categories?.name) ?? "-")}</div>
+                  <div className="text-gray-500">Department: {Array.isArray((a as any).departments) ? ((a as any).departments[0]?.name ?? "-") : (((a as any).departments?.name) ?? "-")}</div>
+                  <div className="text-gray-500">Cost: {typeof a.cost === "number" ? a.cost.toFixed(2) : a.cost}</div>
                   <div className="text-gray-500">Created {new Date(a.created_at as any).toLocaleString()}</div>
                 </li>
               ))
