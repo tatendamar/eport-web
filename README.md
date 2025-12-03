@@ -125,4 +125,4 @@ docker compose up --build
    - `/dashboard` – redirects by role to `/dashboard/admin` or `/dashboard/user`
    - `/assets/new` – create asset
 - RLS policies enforce access: users see/manage only their own assets; admins get elevated privileges.
-- This scaffold favors Server Actions; adjust to Route Handlers if preferred.
+- This scaffold favors Server Actions; adjust to Route Handlers if preferred
