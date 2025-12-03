@@ -71,4 +71,4 @@ jobs:
       - name: Apply Supabase migrations
         run: |
           echo "Applying migrations with Supabase CLI"
-          supabase db push --password "$SUPABASE_DB_PASSWORD"
+          supabase db push --linked --password "$SUPABASE_DB_PASSWORD"
