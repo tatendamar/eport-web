@@ -1,197 +1,166 @@
 -- Combined migration for eport-web
--- Run this in Supabase Dashboard → SQL Editor
+-- This file is applied automatically via GitHub Actions
 
 -- Use pgcrypto for gen_random_uuid()
-create extension if not exists "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Roles enum
-do $$ begin
-  create type user_role as enum ('admin','user');
-exception when duplicate_object then null; end $$;
+DO $$ BEGIN
+  CREATE TYPE user_role AS ENUM ('admin','user');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Departments
-create table if not exists public.departments (
-  id uuid primary key default gen_random_uuid(),
-  name text not null unique
+CREATE TABLE IF NOT EXISTS public.departments (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL UNIQUE
 );
 
 -- Categories
-create table if not exists public.categories (
-  id uuid primary key default gen_random_uuid(),
-  name text not null unique
+CREATE TABLE IF NOT EXISTS public.categories (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL UNIQUE
 );
 
 -- Profiles mapping auth.users -> role/department
-create table if not exists public.profiles (create extension if not exists "pgcrypto";
-  user_id uuid primary key references auth.users (id) on delete cascade,
-  role user_role not null default 'user',
-  department_id uuid references public.departments (id) on delete set null,
-  created_at timestamptz not null default now()
+CREATE TABLE IF NOT EXISTS public.profiles (
+  user_id uuid PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
+  role user_role NOT NULL DEFAULT 'user',
+  department_id uuid REFERENCES public.departments (id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
 );
 
 -- Assets
-create table if not exists public.assets (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  category_id uuid not null references public.categories (id) on delete restrict,
-  department_id uuid not null references public.departments (id) on delete restrict,
-  date_purchased date not null,
-  cost numeric(12,2) not null check (cost >= 0),
-  created_by uuid not null references auth.users (id) on delete cascade,
-  created_at timestamptz not null default now()
+CREATE TABLE IF NOT EXISTS public.assets (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  category_id uuid NOT NULL REFERENCES public.categories (id) ON DELETE RESTRICT,
+  department_id uuid NOT NULL REFERENCES public.departments (id) ON DELETE RESTRICT,
+  date_purchased date NOT NULL,
+  cost numeric(12,2) NOT NULL CHECK (cost >= 0),
+  created_by uuid NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
+  created_at timestamptz NOT NULL DEFAULT now()
 );
 
-create index if not exists idx_assets_created_by on public.assets (created_by);
-create index if not exists idx_assets_category on public.assets (category_id);
-create index if not exists idx_assets_department on public.assets (department_id);
+CREATE INDEX IF NOT EXISTS idx_assets_created_by ON public.assets (created_by);
+CREATE INDEX IF NOT EXISTS idx_assets_category ON public.assets (category_id);
+CREATE INDEX IF NOT EXISTS idx_assets_department ON public.assets (department_id);
 
 -- Helper: check if current user is admin
-create or replace function public.is_admin() returns boolean language sql stable as $$
-  select exists (
-    select 1 from public.profiles where user_id = auth.uid() and role = 'admin'
+CREATE OR REPLACE FUNCTION public.is_admin() RETURNS boolean LANGUAGE sql STABLE AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles WHERE user_id = auth.uid() AND role = 'admin'
   );
 $$;
 
 -- Enable RLS
-alter table profiles enable row level security;
-alter table departments enable row level security;
-alter table categories enable row level security;
-alter table assets enable row level security;
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE departments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE assets ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
-drop policy if exists profiles_self_select on profiles;
-create policy profiles_self_select on profiles for select using (user_id = auth.uid() or public.is_admin());
+DROP POLICY IF EXISTS profiles_self_select ON profiles;
+CREATE POLICY profiles_self_select ON profiles FOR SELECT USING (user_id = auth.uid() OR public.is_admin());
 
-drop policy if exists profiles_self_update on profiles;
-create policy profiles_self_update on profiles for update using (user_id = auth.uid());
+DROP POLICY IF EXISTS profiles_self_update ON profiles;
+CREATE POLICY profiles_self_update ON profiles FOR UPDATE USING (user_id = auth.uid());
 
-drop policy if exists profiles_self_insert on profiles;
-create policy profiles_self_insert on profiles for insert with check (user_id = auth.uid());
+DROP POLICY IF EXISTS profiles_self_insert ON profiles;
+CREATE POLICY profiles_self_insert ON profiles FOR INSERT WITH CHECK (user_id = auth.uid());
 
-drop policy if exists profiles_admin_all on profiles;
-create policy profiles_admin_all on profiles for all using (public.is_admin());
+DROP POLICY IF EXISTS profiles_admin_all ON profiles;
+CREATE POLICY profiles_admin_all ON profiles FOR ALL USING (public.is_admin());
 
 -- Departments policies
-drop policy if exists departments_read on departments;
-create policy departments_read on departments for select using (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS departments_read ON departments;
+CREATE POLICY departments_read ON departments FOR SELECT USING (auth.role() = 'authenticated');
 
-drop policy if exists departments_admin_all on departments;
-create policy departments_admin_all on departments for all using (public.is_admin());
+DROP POLICY IF EXISTS departments_admin_all ON departments;
+CREATE POLICY departments_admin_all ON departments FOR ALL USING (public.is_admin());
 
 -- Categories policies
-drop policy if exists categories_read on categories;
-create policy categories_read on categories for select using (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS categories_read ON categories;
+CREATE POLICY categories_read ON categories FOR SELECT USING (auth.role() = 'authenticated');
 
-drop policy if exists categories_admin_all on categories;
-create policy categories_admin_all on categories for all using (public.is_admin());
+DROP POLICY IF EXISTS categories_admin_all ON categories;
+CREATE POLICY categories_admin_all ON categories FOR ALL USING (public.is_admin());
 
 -- Assets policies
-drop policy if exists assets_own_read on assets;
-create policy assets_own_read on assets for select using (created_by = auth.uid() or public.is_admin());
+DROP POLICY IF EXISTS assets_own_read ON assets;
+CREATE POLICY assets_own_read ON assets FOR SELECT USING (created_by = auth.uid() OR public.is_admin());
 
-drop policy if exists assets_insert_self on assets;
-create policy assets_insert_self on assets for insert with check (created_by = auth.uid());
+DROP POLICY IF EXISTS assets_insert_self ON assets;
+CREATE POLICY assets_insert_self ON assets FOR INSERT WITH CHECK (created_by = auth.uid());
 
-drop policy if exists assets_update_self on assets;
-create policy assets_update_self on assets for update using (created_by = auth.uid());
+DROP POLICY IF EXISTS assets_update_self ON assets;
+CREATE POLICY assets_update_self ON assets FOR UPDATE USING (created_by = auth.uid());
 
-drop policy if exists assets_admin_delete on assets;
-create policy assets_admin_delete on assets for delete using (public.is_admin());
+DROP POLICY IF EXISTS assets_admin_delete ON assets;
+CREATE POLICY assets_admin_delete ON assets FOR DELETE USING (public.is_admin());
 
--- First admin functions
-drop function if exists public.set_first_admin_by_email(text);
-drop function if exists public.set_first_admin_by_id(uuid);
+-- First admin functions (with debug logging)
+DROP FUNCTION IF EXISTS public.set_first_admin_by_id(uuid);
+CREATE OR REPLACE FUNCTION public.set_first_admin_by_id(p_user_id uuid)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  total_profiles int;
+BEGIN
+  SELECT count(*) INTO total_profiles FROM public.profiles;
+  RAISE NOTICE 'set_first_admin_by_id: total_profiles=%, user_id=%', total_profiles, p_user_id;
+  
+  IF total_profiles <> 0 THEN
+    RETURN false;
+  END IF;
+  
+  INSERT INTO public.profiles (user_id, role)
+  VALUES (p_user_id, 'admin')
+  ON CONFLICT (user_id) DO UPDATE SET role = 'admin';
+  
+  RETURN true;
+END;
+$$;
 
-create or replace function public.set_first_admin_by_email(p_email text)
-returns uuid
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
+DROP FUNCTION IF EXISTS public.set_first_admin_by_email(text);
+CREATE OR REPLACE FUNCTION public.set_first_admin_by_email(p_email text)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
   total_profiles int;
   target_user_id uuid;
-begin
-  select count(*) into total_profiles from public.profiles;
-  if total_profiles <> 0 then
-    return null;
-  end if;
-  select u.id into target_user_id
-  from auth.users u
-  where lower(u.email) = lower(p_email)
-  limit 1;
-  if target_user_id is null then
-    return null;
-  end if;
-  insert into public.profiles (user_id, role)
-  values (target_user_id, 'admin')
-  on conflict (user_id) do update set role = 'admin';
-  return target_user_id;
-end;
+BEGIN
+  SELECT count(*) INTO total_profiles FROM public.profiles;
+  RAISE NOTICE 'set_first_admin_by_email: total_profiles=%, email=%', total_profiles, p_email;
+  
+  IF total_profiles <> 0 THEN
+    RETURN null;
+  END IF;
+  
+  SELECT u.id INTO target_user_id
+  FROM auth.users u
+  WHERE lower(u.email) = lower(p_email)
+  LIMIT 1;
+  
+  IF target_user_id IS NULL THEN
+    RAISE NOTICE 'set_first_admin_by_email: user not found for email %', p_email;
+    RETURN null;
+  END IF;
+  
+  INSERT INTO public.profiles (user_id, role)
+  VALUES (target_user_id, 'admin')
+  ON CONFLICT (user_id) DO UPDATE SET role = 'admin';
+  
+  RAISE NOTICE 'set_first_admin_by_email: created admin profile for user_id=%', target_user_id;
+  RETURN target_user_id;
+END;
 $$;
 
-create or replace function public.set_first_admin_by_id(p_user_id uuid)
-returns boolean
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  total_profiles int;
-begin
-  select count(*) into total_profiles from public.profiles;
-  if total_profiles <> 0 then
-    return false;
-  end if;
-  insert into public.profiles (user_id, role)
-  values (p_user_id, 'admin')
-  on conflict (user_id) do update set role = 'admin';
-  return true;
-end;
-$$;
-
--- Bootstrap first admin function
-create or replace function public.set_first_admin()
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  total_profiles integer;
-  self_id uuid := auth.uid();
-begin
-  select count(*) into total_profiles from public.profiles;
-  if total_profiles = 0 then
-    insert into public.profiles (user_id, role)
-    values (self_id, 'admin')
-    on conflict (user_id) do update set role = 'admin';
-    return;
-  end if;
-  if total_profiles = 1 then
-    update public.profiles
-      set role = 'admin'
-    where user_id = self_id;
-    return;
-  end if;
-end;
-$$;
-
--- Promote a user to admin by email (callable by admins only)
-create or replace function public.set_admin_by_email(p_email text)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  if not public.is_admin() then
-    raise exception 'forbidden';
-  end if;
-  update public.profiles p
-    set role = 'admin'
-  where p.user_id = (
-    select u.id from auth.users u where u.email = p_email limit 1
-  );
-end;
-$$;
+-- Notify PostgREST to reload schema cache
+NOTIFY pgrst, 'reload schema';
