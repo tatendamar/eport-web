@@ -35,7 +35,6 @@ export default async function AdminSignupPage() {
     if (error) {
       redirect("/admin-signup?error=" + encodeURIComponent(error.message));
     }
-    // Send user to login to enter OTP; mark this as initial admin flow so we promote after verify
     redirect(`/login?sent=1&email=${encodeURIComponent(email)}&initial=1`);
   }
 

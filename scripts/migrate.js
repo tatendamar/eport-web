@@ -77,7 +77,7 @@ async function runMigration(client, file, sql) {
         throw err;
       }
       
-      console.warn(`Migration attempt ${attempt} failed: ${err.message}`);
+     
       if (attempt < MAX_RETRIES) {
         console.log(`Retrying in ${RETRY_DELAY_MS / 1000}s...`);
         await sleep(RETRY_DELAY_MS);

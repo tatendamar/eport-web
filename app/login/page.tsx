@@ -54,23 +54,12 @@ export default async function LoginPage({ searchParams }: { searchParams?: { sen
           .from("profiles")
           .select("user_id", { count: "exact", head: true });
 
-        if (countErr) {
-          console.warn("[first-admin] count error:", countErr.message);
-        }
-
-        console.log("[first-admin] Current profile count:", count);
-
         if ((count ?? 0) === 0) {
-          // Method 1: Try the RPC function that uses user_id directly
-          console.log("[first-admin] Trying set_first_admin_by_id RPC with:", currentUser.id);
           const { data: rpcResult, error: rpcErr } = await adminClient.rpc("set_first_admin_by_id", { p_user_id: currentUser.id });
           if (!rpcErr && rpcResult === true) {
-            console.log("[first-admin] SUCCESS via set_first_admin_by_id RPC");
             return redirect("/dashboard?firstAdmin=1");
           }
-          if (rpcErr) {
-            console.warn("[first-admin] set_first_admin_by_id error:", rpcErr.message);
-          }
+         
 
           // Method 2: Direct upsert with service-role client
           console.log("[first-admin] Trying direct upsert for user_id:", currentUser.id);
