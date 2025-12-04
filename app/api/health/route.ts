@@ -14,7 +14,7 @@ export async function GET() {
     hasUrl: !!url,
     hasAnonKey: !!anonKey,
     hasServiceKey: !!serviceKey,
-    serviceKeyLength: serviceKey?.length || 0,
+    serviceKeyPrefix: serviceKey?.substring(0, 20) + "...",
   };
 
   // Test service-role connection
@@ -32,17 +32,36 @@ export async function GET() {
       checks.profilesCount = count;
       checks.profilesError = countErr?.message || null;
 
-      // Check if functions exist
-      const { error: fnErr1 } = await admin.rpc("set_first_admin_by_id", { p_user_id: "00000000-0000-0000-0000-000000000000" });
-      checks.setFirstAdminByIdExists = !fnErr1?.message?.includes("does not exist");
+      // Try to insert a test and rollback to verify write access
+      const testId = "00000000-0000-0000-0000-000000000001";
+      const { error: insertTestErr } = await admin
+        .from("profiles")
+        .upsert({ user_id: testId, role: "admin" as const }, { onConflict: "user_id" });
+      checks.canWriteProfiles = !insertTestErr;
+      checks.writeError = insertTestErr?.message || null;
+      
+      // Clean up test row
+      if (!insertTestErr) {
+        await admin.from("profiles").delete().eq("user_id", testId);
+      }
 
-      const { error: fnErr2 } = await admin.rpc("set_first_admin_by_email", { p_email: "test@test.com" });
+      // Check if functions exist
+      const { data: fn1Data, error: fnErr1 } = await admin.rpc("set_first_admin_by_id", { p_user_id: testId });
+      checks.setFirstAdminByIdExists = !fnErr1?.message?.includes("does not exist");
+      checks.setFirstAdminByIdResult = fn1Data;
+      checks.setFirstAdminByIdError = fnErr1?.message || null;
+
+      const { data: fn2Data, error: fnErr2 } = await admin.rpc("set_first_admin_by_email", { p_email: "test@test.com" });
       checks.setFirstAdminByEmailExists = !fnErr2?.message?.includes("does not exist");
+      checks.setFirstAdminByEmailResult = fn2Data;
+      checks.setFirstAdminByEmailError = fnErr2?.message || null;
 
     } catch (e) {
       checks.connectionError = e instanceof Error ? e.message : String(e);
     }
   }
 
-  return NextResponse.json(checks);
+  return NextResponse.json(checks, { 
+    headers: { "Cache-Control": "no-store" } 
+  });
 }

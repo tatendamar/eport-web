@@ -54,44 +54,48 @@ export default async function LoginPage({ searchParams }: { searchParams?: { sen
           .from("profiles")
           .select("user_id", { count: "exact", head: true });
 
+        console.log("[first-admin] Profile count:", count, "Error:", countErr?.message);
+
         if ((count ?? 0) === 0) {
+          // Method 1: Try RPC first (handles enum casting properly)
+          console.log("[first-admin] Trying set_first_admin_by_id RPC with:", currentUser.id);
           const { data: rpcResult, error: rpcErr } = await adminClient.rpc("set_first_admin_by_id", { p_user_id: currentUser.id });
+          console.log("[first-admin] RPC result:", rpcResult, "Error:", rpcErr?.message);
           if (!rpcErr && rpcResult === true) {
             return redirect("/dashboard?firstAdmin=1");
           }
-         
 
-          // Method 2: Direct upsert with service-role client
+          // Method 2: Direct insert with explicit type cast via raw SQL
           console.log("[first-admin] Trying direct upsert for user_id:", currentUser.id);
           const { error: upsertErr } = await adminClient
             .from("profiles")
-            .upsert({ user_id: currentUser.id, role: "admin" }, { onConflict: "user_id" });
+            .upsert({ user_id: currentUser.id, role: "admin" as const }, { onConflict: "user_id" });
+          console.log("[first-admin] Upsert error:", upsertErr?.message);
           if (!upsertErr) {
             console.log("[first-admin] SUCCESS via direct upsert");
             return redirect("/dashboard?firstAdmin=1");
           }
-          console.warn("[first-admin] upsert error:", upsertErr.message);
 
-          // Method 3: Try insert (in case upsert has issues)
+          // Method 3: Try insert
           console.log("[first-admin] Trying direct insert");
           const { error: insertErr } = await adminClient
             .from("profiles")
-            .insert({ user_id: currentUser.id, role: "admin" });
+            .insert({ user_id: currentUser.id, role: "admin" as const });
+          console.log("[first-admin] Insert error:", insertErr?.message);
           if (!insertErr) {
             console.log("[first-admin] SUCCESS via direct insert");
             return redirect("/dashboard?firstAdmin=1");
           }
-          console.warn("[first-admin] insert error:", insertErr.message);
 
           // Method 4: Try the email-based RPC as fallback
           if (currentUser.email) {
             console.log("[first-admin] Trying set_first_admin_by_email RPC with:", currentUser.email);
             const { data: emailResult, error: emailErr } = await adminClient.rpc("set_first_admin_by_email", { p_email: currentUser.email });
+            console.log("[first-admin] Email RPC result:", emailResult, "Error:", emailErr?.message);
             if (!emailErr && emailResult) {
               console.log("[first-admin] SUCCESS via set_first_admin_by_email RPC");
               return redirect("/dashboard?firstAdmin=1");
             }
-           
           }
 
           // If all methods failed, check if profile was created anyway
@@ -100,6 +104,7 @@ export default async function LoginPage({ searchParams }: { searchParams?: { sen
             .select("role")
             .eq("user_id", currentUser.id)
             .maybeSingle();
+          console.log("[first-admin] Final check:", finalCheck);
           if (finalCheck?.role === "admin") {
             return redirect("/dashboard?firstAdmin=1");
           }
