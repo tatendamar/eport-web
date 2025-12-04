@@ -108,15 +108,7 @@ export default async function LoginPage({ searchParams }: { searchParams?: { sen
           if (finalCheck?.role === "admin") {
             return redirect("/dashboard?firstAdmin=1");
           }
-
-          console.error("[first-admin] FAILED - could not create admin profile after all attempts");
-        } else {
-          console.log("[first-admin] Profiles already exist, skipping promotion");
         }
-      } else if (!adminClient) {
-        console.error("[first-admin] No admin client available - check SUPABASE_SERVICE_ROLE_KEY");
-      } else if (!currentUser?.id) {
-        console.error("[first-admin] No current user ID from session after OTP verification");
       }
     }
 
