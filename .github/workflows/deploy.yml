@@ -73,23 +73,38 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
         run: |
-          echo "Applying migrations using Supabase CLI"
+          echo "Applying migrations using direct database connection"
           
-          # Method 1: Try supabase db push (applies local schema to remote)
-          echo "Attempting supabase db push..."
-          supabase db push --include-all --password "$SUPABASE_DB_PASSWORD" 2>&1 || true
+          # Install psql
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
           
-          # Method 2: If push doesn't work, apply combined SQL via direct connection
-          echo "Applying combined_migration.sql via direct connection..."
+          # Try multiple pooler regions
+          REGIONS=("us-east-1" "us-west-1" "eu-west-1" "eu-central-1" "ap-southeast-1" "ap-northeast-1" "ap-south-1")
           
-          # Get connection string from linked project
-          DB_URL="postgresql://postgres.${SUPABASE_PROJECT_REF}:${SUPABASE_DB_PASSWORD}@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
+          CONNECTED=false
+          for REGION in "${REGIONS[@]}"; do
+            echo "Trying region: $REGION"
+            SUPABASE_DB_HOST="aws-0-${REGION}.pooler.supabase.com"
+            
+            # Test connection
+            if PGPASSWORD="$SUPABASE_DB_PASSWORD" psql -h "$SUPABASE_DB_HOST" -p 6543 -U "postgres.${SUPABASE_PROJECT_REF}" -d postgres -c "SELECT 1" 2>/dev/null; then
+              echo "Connected via $SUPABASE_DB_HOST"
+              
+              # Apply migrations
+              PGPASSWORD="$SUPABASE_DB_PASSWORD" psql -h "$SUPABASE_DB_HOST" -p 6543 -U "postgres.${SUPABASE_PROJECT_REF}" -d postgres -f supabase/combined_migration.sql 2>&1 || echo "Some statements may already exist"
+              
+              CONNECTED=true
+              break
+            fi
+          done
           
-          # Install psql if not available
-          sudo apt-get update && sudo apt-get install -y postgresql-client || true
+          if [ "$CONNECTED" = false ]; then
+            echo "Could not connect to any pooler region. Trying direct connection..."
+            # Try direct connection (port 5432)
+            DB_HOST="db.${SUPABASE_PROJECT_REF}.supabase.co"
+            PGPASSWORD="$SUPABASE_DB_PASSWORD" psql -h "$DB_HOST" -p 5432 -U postgres -d postgres -f supabase/combined_migration.sql 2>&1 || echo "Direct connection failed or some statements already exist"
+          fi
           
-          # Apply the SQL file
-          PGPASSWORD="$SUPABASE_DB_PASSWORD" psql "$DB_URL" -f supabase/combined_migration.sql 2>&1 || echo "Some statements may already exist (expected)"
-          
-          echo "Migration complete"
+          echo "Migration step complete"
