@@ -31,11 +31,13 @@ export default async function LoginPage({ searchParams }: { searchParams?: { sen
     const email = String(formData.get("email") || "").trim();
     const token = String(formData.get("token") || "").trim();
     const initial = String(formData.get("initial") || "").trim();
+    console.log("[verifyOtp] email:", email, "initial:", initial, "token length:", token.length);
     if (!email || !token) return;
 
     const supabase = getSupabaseServer();
     const { error } = await supabase.auth.verifyOtp({ email, token, type: "email" });
     if (error) {
+      console.log("[verifyOtp] OTP error:", error.message);
       return redirect(`/login?error=${encodeURIComponent(error.message)}`);
     }
 
@@ -89,7 +91,11 @@ export default async function LoginPage({ searchParams }: { searchParams?: { sen
           console.log("[first-admin] SUCCESS via direct insert");
           return redirect("/dashboard?firstAdmin=1");
         }
+      } else {
+        console.log("[first-admin] No adminClient or currentUser.id - adminClient:", !!adminClient, "userId:", currentUser?.id);
       }
+    } else {
+      console.log("[verifyOtp] initial flag not set, skipping first-admin logic");
     }
 
     return redirect("/dashboard");
