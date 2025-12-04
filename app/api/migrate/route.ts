@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     const { error: fn2Err } = await admin.rpc("set_first_admin_by_email", { p_email: "test@test.com" });
     results.setFirstAdminByEmailExists = !fn2Err?.message?.includes("does not exist");
 
-    // Get profile count
+
     const { count } = await admin.from("profiles").select("user_id", { count: "exact", head: true });
     results.profileCount = count;
 
