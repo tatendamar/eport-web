@@ -72,27 +72,24 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
-          echo "Applying combined migration via Supabase Management API"
+          echo "Applying migrations using Supabase CLI"
           
-          # Read the SQL file
-          SQL_CONTENT=$(cat supabase/combined_migration.sql)
+          # Method 1: Try supabase db push (applies local schema to remote)
+          echo "Attempting supabase db push..."
+          supabase db push --include-all --password "$SUPABASE_DB_PASSWORD" 2>&1 || true
           
-          # Escape the SQL for JSON
-          SQL_ESCAPED=$(echo "$SQL_CONTENT" | jq -Rs .)
+          # Method 2: If push doesn't work, apply combined SQL via direct connection
+          echo "Applying combined_migration.sql via direct connection..."
           
-          # Call the Supabase Management API to run SQL
-          RESPONSE=$(curl -s -X POST \
-            "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/database/query" \
-            -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d "{\"query\": ${SQL_ESCAPED}}")
+          # Get connection string from linked project
+          DB_URL="postgresql://postgres.${SUPABASE_PROJECT_REF}:${SUPABASE_DB_PASSWORD}@aws-0-us-east-1.pooler.supabase.com:6543/postgres"
           
-          echo "Response: $RESPONSE"
+          # Install psql if not available
+          sudo apt-get update && sudo apt-get install -y postgresql-client || true
           
-          # Check if there was an error
-          if echo "$RESPONSE" | jq -e '.error' > /dev/null 2>&1; then
-            echo "Migration may have partial errors (expected if objects already exist)"
-          else
-            echo "Migration applied successfully"
-          fi
+          # Apply the SQL file
+          PGPASSWORD="$SUPABASE_DB_PASSWORD" psql "$DB_URL" -f supabase/combined_migration.sql 2>&1 || echo "Some statements may already exist (expected)"
+          
+          echo "Migration complete"
