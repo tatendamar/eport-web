@@ -43,61 +43,51 @@ export default async function LoginPage({ searchParams }: { searchParams?: { sen
 
     // First-admin promotion: only when explicitly flagged (from admin-signup flow)
     if (initial === "1") {
-      console.log("[first-admin] Attempting first admin promotion for:", email);
+     
 
       // Get the current user from session FIRST - this is the most reliable source
       const { data: { user: currentUser } } = await supabase.auth.getUser();
-      console.log("[first-admin] Current user from session:", currentUser?.id, currentUser?.email);
+    
 
       const adminClient = getAdminClient();
       if (adminClient && currentUser?.id) {
         // Method 1: Try RPC first (bypasses PostgREST table cache)
-        console.log("[first-admin] Trying set_first_admin_by_id RPC with:", currentUser.id);
+
         const { data: rpcResult, error: rpcErr } = await adminClient.rpc("set_first_admin_by_id", { p_user_id: currentUser.id });
-        console.log("[first-admin] RPC result:", rpcResult, "Error:", rpcErr?.message);
+
         if (!rpcErr && rpcResult === true) {
           return redirect("/dashboard?firstAdmin=1");
         }
 
         // Method 2: Try the email-based RPC
         if (currentUser.email) {
-          console.log("[first-admin] Trying set_first_admin_by_email RPC with:", currentUser.email);
+
           const { data: emailResult, error: emailErr } = await adminClient.rpc("set_first_admin_by_email", { p_email: currentUser.email });
-          console.log("[first-admin] Email RPC result:", emailResult, "Error:", emailErr?.message);
+      
           if (!emailErr && emailResult) {
-            console.log("[first-admin] SUCCESS via set_first_admin_by_email RPC");
             return redirect("/dashboard?firstAdmin=1");
           }
         }
 
-        // Method 3: Direct upsert (may fail if PostgREST cache is stale)
-        console.log("[first-admin] Trying direct upsert for user_id:", currentUser.id);
+
         const { error: upsertErr } = await adminClient
           .from("profiles")
           .upsert({ user_id: currentUser.id, role: "admin" as const }, { onConflict: "user_id" });
-        console.log("[first-admin] Upsert error:", upsertErr?.message);
+
         if (!upsertErr) {
-          console.log("[first-admin] SUCCESS via direct upsert");
           return redirect("/dashboard?firstAdmin=1");
         }
 
-        // Method 4: Try insert
-        console.log("[first-admin] Trying direct insert");
+      
         const { error: insertErr } = await adminClient
           .from("profiles")
           .insert({ user_id: currentUser.id, role: "admin" as const });
-        console.log("[first-admin] Insert error:", insertErr?.message);
+       
         if (!insertErr) {
-          console.log("[first-admin] SUCCESS via direct insert");
           return redirect("/dashboard?firstAdmin=1");
         }
-      } else {
-        console.log("[first-admin] No adminClient or currentUser.id - adminClient:", !!adminClient, "userId:", currentUser?.id);
       }
-    } else {
-      console.log("[verifyOtp] initial flag not set, skipping first-admin logic");
     }
-
     return redirect("/dashboard");
   }
 
