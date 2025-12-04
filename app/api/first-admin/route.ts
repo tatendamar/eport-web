@@ -34,7 +34,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, method: "rpc_by_id" });
     }
 
-    // Try email-based approach
     if (email) {
       const { data: emailResult, error: emailErr } = await adminClient.rpc("set_first_admin_by_email", { 
         p_email: email 
