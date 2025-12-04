@@ -62,11 +62,16 @@ A minimal Asset Manager web app with Admin and User roles.
    supabase db push # applies files in supabase/migrations
    ```
 
-5. Initial Admin Signup (Do this first)
-   - Start the app and visit `/admin-signup` to bootstrap the first admin.
-   - This route sends an invite using the service role and promotes the first verified user to `admin` when profiles are empty.
-   - After verifying via email, sign in on `/login` and you’ll be redirected to `/dashboard/admin`.
-   - Only admins can invite users from the Admin Dashboard. Ensure you’re signed in as an admin before sending invites.
+5. Initial Admin Setup
+   - After your first signup via `/admin-signup`, run this SQL in Supabase SQL Editor to promote yourself to admin:
+
+   ```sql
+   SELECT set_first_admin_by_id('YOUR-USER-ID-HERE');
+   ```
+
+   - Replace `YOUR-USER-ID-HERE` with your user ID from `auth.users` table.
+   - You can find your user ID by running: `SELECT id, email FROM auth.users;`
+   - After this, sign in on `/login` and you'll be redirected to `/dashboard/admin`.
 
 6. Install and Run the App
 
