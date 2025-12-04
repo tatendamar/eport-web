@@ -101,7 +101,6 @@ export default async function LoginPage({ searchParams }: { searchParams?: { sen
             .eq("user_id", currentUser.id)
             .maybeSingle();
           if (finalCheck?.role === "admin") {
-            console.log("[first-admin] SUCCESS - admin profile exists after all attempts");
             return redirect("/dashboard?firstAdmin=1");
           }
 
