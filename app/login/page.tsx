@@ -91,9 +91,7 @@ export default async function LoginPage({ searchParams }: { searchParams?: { sen
               console.log("[first-admin] SUCCESS via set_first_admin_by_email RPC");
               return redirect("/dashboard?firstAdmin=1");
             }
-            if (emailErr) {
-              console.warn("[first-admin] set_first_admin_by_email error:", emailErr.message);
-            }
+           
           }
 
           // If all methods failed, check if profile was created anyway
