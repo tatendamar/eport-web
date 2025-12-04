@@ -32,11 +32,7 @@ export async function POST(request: Request) {
     if (checkErr?.message?.includes("does not exist")) {
       results.needsMigration = true;
       
-      // Run schema creation via RPC (we need to create the tables via SQL)
-      // Since we can't run raw SQL via the JS client, we'll create objects one by one
-      
-      // Unfortunately, Supabase JS client cannot create tables directly.
-      // The migrations must be run via psql or the SQL Editor.
+
       
       results.message = "Database schema does not exist. Please run migrations via Supabase Dashboard SQL Editor or GitHub Actions.";
       results.migrationFile = "/supabase/combined_migration.sql";
