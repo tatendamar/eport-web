@@ -33,36 +33,12 @@ A minimal Asset Manager web app with Admin and User roles.
 
    - Find these in Supabase: Project Settings → API (URL/keys) and Database (connection string).
 
-3. Database Migrations (Recommended: Node runner)
-   - This repo includes a migration runner designed for hosted Supabase and IPv6-only constraints.
-   - Ensure `SUPABASE_DB_URL` is set, then run:
+3. Database Migrations
+   - Migrations run automatically via GitHub Actions on push to `main`.
+   - The schema is defined in `supabase/combined_migration.sql`.
+   - For manual setup, copy the contents of that file and run in Supabase SQL Editor.
 
-   ```zsh
-   node scripts/migrate.js
-   ```
-
-   - It applies files under `supabase/migrations/` in safe order:
-     - `*_init.sql` creates schema, tables, and functions.
-     - `*_policies.sql` applies RLS policies.
-     - `*_cleanup_profiles_email.sql` avoids conflicts on triggers
-
-4. Optional: Supabase CLI
-   - Install CLI (optional, for local dev or non-IPv6 environments):
-
-   ```zsh
-   brew install supabase/tap/supabase
-   supabase --version
-   supabase login # uses SUPABASE_ACCESS_TOKEN, or interactive
-   supabase link --project-ref "$SUPABASE_PROJECT_REF"
-   ```
-
-   - Push SQL with CLI (if your network supports it):
-
-   ```zsh
-   supabase db push # applies files in supabase/migrations
-   ```
-
-5. Initial Admin Setup
+4. Initial Admin Setup
    - After your first signup via `/admin-signup`, run this SQL in Supabase SQL Editor to promote yourself to admin:
 
    ```sql
@@ -73,7 +49,7 @@ A minimal Asset Manager web app with Admin and User roles.
    - You can find your user ID by running: `SELECT id, email FROM auth.users;`
    - After this, sign in on `/login` and you'll be redirected to `/dashboard/admin`.
 
-6. Install and Run the App
+5. Install and Run the App
 
    ```zsh
    npm install
@@ -88,7 +64,6 @@ A minimal Asset Manager web app with Admin and User roles.
 
 - Scripts:
    - `npm run dev`: start local dev server.
-   - `node scripts/migrate.js`: apply DB migrations to your Supabase project using `SUPABASE_DB_URL`.
 - Env:
    - Use `.env.local` for local development; see variables in Setup above.
 - Testing changes:
