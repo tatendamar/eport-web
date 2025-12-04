@@ -71,12 +71,23 @@ jobs:
       - name: Apply Supabase migrations
         env:
           PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-          PGHOST: ${{ secrets.SUPABASE_DB_HOST }}
         run: |
-          echo "Applying migrations directly"
-          # Apply each migration in order
-          for file in $(ls supabase/migrations/*.sql | sort); do
-            echo "Applying: $file"
-            psql -h "$PGHOST" -p 6543 -U "postgres.$SUPABASE_PROJECT_REF" -d postgres -f "$file" 2>&1 || echo "Note: Some statements may already exist"
+          echo "Applying migrations with psql"
+          # Try different regional pooler hosts
+          HOSTS=("aws-0-us-east-1.pooler.supabase.com" "aws-0-us-west-1.pooler.supabase.com" "aws-0-eu-west-1.pooler.supabase.com" "aws-0-ap-southeast-1.pooler.supabase.com")
+          
+          for HOST in "${HOSTS[@]}"; do
+            echo "Trying host: $HOST"
+            if psql -h "$HOST" -p 6543 -U "postgres.$SUPABASE_PROJECT_REF" -d postgres -c "SELECT 1" 2>/dev/null; then
+              echo "Connected to $HOST"
+              for file in $(ls supabase/migrations/*.sql | sort); do
+                echo "Applying: $file"
+                psql -h "$HOST" -p 6543 -U "postgres.$SUPABASE_PROJECT_REF" -d postgres -f "$file" 2>&1 || echo "Note: Some statements in $file may already exist"
+              done
+              echo "Migrations complete"
+              exit 0
+            fi
           done
-          echo "Migrations complete"
+          
+          echo "Could not connect to any pooler host. Please set SUPABASE_DB_HOST secret."
+          exit 1
