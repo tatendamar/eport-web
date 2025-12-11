@@ -32,6 +32,18 @@ export async function registerAssetWarranty(input: RegisterWarrantyInput): Promi
     const { data: { user } } = await supabase.auth.getUser();
     const { data: { session } } = await supabase.auth.getSession();
 
+    // Debug (non-sensitive): verify environment and session presence in production
+    try {
+      console.log('warranty-action debug', {
+        envWarrantyKeyPresent: !!process.env.WARRANTY_API_KEY,
+        envWarrantyUrlPresent: !!process.env.WARRANTY_API_URL,
+        sessionPresent: !!session?.access_token,
+        userEmail: user?.email || null,
+      });
+    } catch (e) {
+      // swallow logging errors in environments that restrict console
+    }
+
     if (!user) {
       return {
         success: false,
