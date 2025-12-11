@@ -41,9 +41,7 @@ interface WarrantyCheckResponse {
   };
 }
 
-/**
- * Register a warranty for an asset
- */
+
 export async function registerWarranty(data: WarrantyRegistration, authToken?: string): Promise<WarrantyResponse> {
   try {
     const response = await fetch(`${WARRANTY_API_URL}/api/v1/warranties/register`, {
