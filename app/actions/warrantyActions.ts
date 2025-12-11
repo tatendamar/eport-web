@@ -27,10 +27,11 @@ export interface ActionResult {
  */
 export async function registerAssetWarranty(input: RegisterWarrantyInput): Promise<ActionResult> {
   try {
-    // Get current user
+    // Get current user and session (access token)
     const supabase = getSupabaseServer();
     const { data: { user } } = await supabase.auth.getUser();
-    
+    const { data: { session } } = await supabase.auth.getSession();
+
     if (!user) {
       return {
         success: false,
@@ -40,7 +41,7 @@ export async function registerAssetWarranty(input: RegisterWarrantyInput): Promi
 
     // Check if warranty already exists (with safe handling)
     try {
-      const existingWarranty = await checkWarranty(input.assetId);
+      const existingWarranty = await checkWarranty(input.assetId, session?.access_token);
       if (existingWarranty && existingWarranty.has_warranty === true) {
         return {
           success: false,
@@ -62,7 +63,7 @@ export async function registerAssetWarranty(input: RegisterWarrantyInput): Promi
       date_purchased: input.datePurchased,
       warranty_notes: input.warrantyNotes,
       registered_by_email: user.email || '',
-    });
+    }, session?.access_token);
 
     if (!result.success) {
       return {
@@ -93,7 +94,9 @@ export async function registerAssetWarranty(input: RegisterWarrantyInput): Promi
  */
 export async function checkAssetWarranty(assetId: string): Promise<ActionResult> {
   try {
-    const result = await checkWarranty(assetId);
+    const supabase = getSupabaseServer();
+    const { data: { session } } = await supabase.auth.getSession();
+    const result = await checkWarranty(assetId, session?.access_token);
     
     return {
       success: true,
@@ -114,7 +117,9 @@ export async function checkAssetWarranty(assetId: string): Promise<ActionResult>
  */
 export async function getAssetWarranty(assetId: string): Promise<ActionResult> {
   try {
-    const result = await getWarrantyByAssetId(assetId);
+    const supabase = getSupabaseServer();
+    const { data: { session } } = await supabase.auth.getSession();
+    const result = await getWarrantyByAssetId(assetId, session?.access_token);
     
     if (!result.success) {
       return {

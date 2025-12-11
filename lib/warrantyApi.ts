@@ -3,7 +3,7 @@
  * Connects to the Warranty Register API at server10.eport.ws
  */
 
-const WARRANTY_API_URL = process.env.WARRANTY_API_URL || 'http://server10.eport.ws';
+const WARRANTY_API_URL = process.env.WARRANTY_API_URL || 'https://server10.eport.ws';
 const WARRANTY_API_KEY = process.env.WARRANTY_API_KEY || '';
 
 interface WarrantyRegistration {
@@ -44,13 +44,14 @@ interface WarrantyCheckResponse {
 /**
  * Register a warranty for an asset
  */
-export async function registerWarranty(data: WarrantyRegistration): Promise<WarrantyResponse> {
+export async function registerWarranty(data: WarrantyRegistration, authToken?: string): Promise<WarrantyResponse> {
   try {
     const response = await fetch(`${WARRANTY_API_URL}/api/v1/warranties/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-API-Key': WARRANTY_API_KEY,
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       },
       body: JSON.stringify(data),
     });
@@ -89,12 +90,13 @@ export async function registerWarranty(data: WarrantyRegistration): Promise<Warr
 /**
  * Check if an asset has a registered warranty
  */
-export async function checkWarranty(assetId: string): Promise<WarrantyCheckResponse> {
+export async function checkWarranty(assetId: string, authToken?: string): Promise<WarrantyCheckResponse> {
   try {
     const response = await fetch(`${WARRANTY_API_URL}/api/v1/warranties/check/${assetId}`, {
       method: 'GET',
       headers: {
         'X-API-Key': WARRANTY_API_KEY,
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       },
     });
 
@@ -129,12 +131,13 @@ export async function checkWarranty(assetId: string): Promise<WarrantyCheckRespo
 /**
  * Get warranty details by asset ID
  */
-export async function getWarrantyByAssetId(assetId: string): Promise<WarrantyResponse> {
+export async function getWarrantyByAssetId(assetId: string, authToken?: string): Promise<WarrantyResponse> {
   try {
     const response = await fetch(`${WARRANTY_API_URL}/api/v1/warranties/asset/${assetId}`, {
       method: 'GET',
       headers: {
         'X-API-Key': WARRANTY_API_KEY,
+        ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       },
     });
 
