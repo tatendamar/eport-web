@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { RegisterWarrantyButton } from "@/components/RegisterWarrantyButton";
 
 export default async function UserDashboard() {
   const supabase = getSupabaseServer();
@@ -27,11 +28,16 @@ export default async function UserDashboard() {
             {assets && assets.length > 0 ? (
               assets.map((a: any) => (
                 <li key={a.id} className="py-3">
-                  <div className="font-medium">{a.name}</div>
-                  <div className="text-gray-500">Category: {Array.isArray((a as any).categories) ? ((a as any).categories[0]?.name ?? "-") : (((a as any).categories?.name) ?? "-")}</div>
-                  <div className="text-gray-500">Department: {Array.isArray((a as any).departments) ? ((a as any).departments[0]?.name ?? "-") : (((a as any).departments?.name) ?? "-")}</div>
-                  <div className="text-gray-500">Cost: {typeof a.cost === "number" ? a.cost.toFixed(2) : a.cost}</div>
-                  <div className="text-gray-500">Created {new Date(a.created_at as any).toLocaleString()}</div>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="font-medium">{a.name}</div>
+                      <div className="text-gray-500">Category: {Array.isArray((a as any).categories) ? ((a as any).categories[0]?.name ?? "-") : (((a as any).categories?.name) ?? "-")}</div>
+                      <div className="text-gray-500">Department: {Array.isArray((a as any).departments) ? ((a as any).departments[0]?.name ?? "-") : (((a as any).departments?.name) ?? "-")}</div>
+                      <div className="text-gray-500">Cost: {typeof a.cost === "number" ? a.cost.toFixed(2) : a.cost}</div>
+                      <div className="text-gray-500">Created {new Date(a.created_at as any).toLocaleString()}</div>
+                    </div>
+                    <RegisterWarrantyButton asset={a} />
+                  </div>
                 </li>
               ))
             ) : (
