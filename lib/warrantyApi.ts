@@ -44,23 +44,12 @@ interface WarrantyCheckResponse {
 
 export async function registerWarranty(data: WarrantyRegistration, authToken?: string): Promise<WarrantyResponse> {
   try {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-    if (WARRANTY_API_KEY) headers['X-API-Key'] = WARRANTY_API_KEY;
-    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-
-    // Debug (non-sensitive): show presence/length of secrets and whether auth token is provided
-    console.log('warranty-api debug', {
-      url: WARRANTY_API_URL,
-      hasApiKey: !!WARRANTY_API_KEY,
-      apiKeyLength: WARRANTY_API_KEY ? WARRANTY_API_KEY.length : 0,
-      authProvided: !!authToken,
-    });
-
     const response = await fetch(`${WARRANTY_API_URL}/api/v1/warranties/register`, {
       method: 'POST',
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': WARRANTY_API_KEY,
+      },
       body: JSON.stringify(data),
     });
 
@@ -98,23 +87,13 @@ export async function registerWarranty(data: WarrantyRegistration, authToken?: s
 /**
  * Check if an asset has a registered warranty
  */
-export async function checkWarranty(assetId: string, authToken?: string): Promise<WarrantyCheckResponse> {
+export async function checkWarranty(assetId: string): Promise<WarrantyCheckResponse> {
   try {
-    const headers: Record<string, string> = {};
-    if (WARRANTY_API_KEY) headers['X-API-Key'] = WARRANTY_API_KEY;
-    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-
-    console.log('warranty-api debug (check)', {
-      url: WARRANTY_API_URL,
-      hasApiKey: !!WARRANTY_API_KEY,
-      apiKeyLength: WARRANTY_API_KEY ? WARRANTY_API_KEY.length : 0,
-      authProvided: !!authToken,
-      assetId,
-    });
-
     const response = await fetch(`${WARRANTY_API_URL}/api/v1/warranties/check/${assetId}`, {
       method: 'GET',
-      headers,
+      headers: {
+        'X-API-Key': WARRANTY_API_KEY,
+      },
     });
 
     if (!response.ok) {
@@ -123,8 +102,7 @@ export async function checkWarranty(assetId: string, authToken?: string): Promis
 
     const data = await response.json();
     
-    // The API returns the warranty object if it exists, or null if not
-    // If we got data back, the asset has a warranty
+   
     if (!data) {
       return { has_warranty: false };
     }
@@ -148,23 +126,13 @@ export async function checkWarranty(assetId: string, authToken?: string): Promis
 /**
  * Get warranty details by asset ID
  */
-export async function getWarrantyByAssetId(assetId: string, authToken?: string): Promise<WarrantyResponse> {
+export async function getWarrantyByAssetId(assetId: string): Promise<WarrantyResponse> {
   try {
-    const headers: Record<string, string> = {};
-    if (WARRANTY_API_KEY) headers['X-API-Key'] = WARRANTY_API_KEY;
-    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-
-    console.log('warranty-api debug (getByAsset)', {
-      url: WARRANTY_API_URL,
-      hasApiKey: !!WARRANTY_API_KEY,
-      apiKeyLength: WARRANTY_API_KEY ? WARRANTY_API_KEY.length : 0,
-      authProvided: !!authToken,
-      assetId,
-    });
-
     const response = await fetch(`${WARRANTY_API_URL}/api/v1/warranties/asset/${assetId}`, {
       method: 'GET',
-      headers,
+      headers: {
+        'X-API-Key': WARRANTY_API_KEY,
+      },
     });
 
     const result = await response.json();

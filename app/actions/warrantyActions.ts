@@ -27,23 +27,10 @@ export interface ActionResult {
  */
 export async function registerAssetWarranty(input: RegisterWarrantyInput): Promise<ActionResult> {
   try {
-    // Get current user and session (access token)
+    // Get current user
     const supabase = getSupabaseServer();
     const { data: { user } } = await supabase.auth.getUser();
-    const { data: { session } } = await supabase.auth.getSession();
-
-    // Debug (non-sensitive): verify environment and session presence in production
-    try {
-      console.log('warranty-action debug', {
-        envWarrantyKeyPresent: !!process.env.WARRANTY_API_KEY,
-        envWarrantyUrlPresent: !!process.env.WARRANTY_API_URL,
-        sessionPresent: !!session?.access_token,
-        userEmail: user?.email || null,
-      });
-    } catch (e) {
-      // swallow logging errors in environments that restrict console
-    }
-
+    
     if (!user) {
       return {
         success: false,
@@ -53,7 +40,7 @@ export async function registerAssetWarranty(input: RegisterWarrantyInput): Promi
 
     // Check if warranty already exists (with safe handling)
     try {
-      const existingWarranty = await checkWarranty(input.assetId, session?.access_token);
+      const existingWarranty = await checkWarranty(input.assetId);
       if (existingWarranty && existingWarranty.has_warranty === true) {
         return {
           success: false,
@@ -75,7 +62,7 @@ export async function registerAssetWarranty(input: RegisterWarrantyInput): Promi
       date_purchased: input.datePurchased,
       warranty_notes: input.warrantyNotes,
       registered_by_email: user.email || '',
-    }, session?.access_token);
+    });
 
     if (!result.success) {
       return {
@@ -106,9 +93,7 @@ export async function registerAssetWarranty(input: RegisterWarrantyInput): Promi
  */
 export async function checkAssetWarranty(assetId: string): Promise<ActionResult> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { session } } = await supabase.auth.getSession();
-    const result = await checkWarranty(assetId, session?.access_token);
+    const result = await checkWarranty(assetId);
     
     return {
       success: true,
@@ -129,9 +114,7 @@ export async function checkAssetWarranty(assetId: string): Promise<ActionResult>
  */
 export async function getAssetWarranty(assetId: string): Promise<ActionResult> {
   try {
-    const supabase = getSupabaseServer();
-    const { data: { session } } = await supabase.auth.getSession();
-    const result = await getWarrantyByAssetId(assetId, session?.access_token);
+    const result = await getWarrantyByAssetId(assetId);
     
     if (!result.success) {
       return {
