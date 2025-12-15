@@ -1,7 +1,3 @@
-/**
- * Warranty API Client
- * Connects to the Warranty Register API at server10.eport.ws
- */
 
 const WARRANTY_API_URL = process.env.WARRANTY_API_URL || 'https://server10.eport.ws';
 const WARRANTY_API_KEY = process.env.WARRANTY_API_KEY || '';
